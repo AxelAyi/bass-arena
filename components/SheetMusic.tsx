@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Box, Paper, CircularProgress, Typography, useTheme } from '@mui/material';
-import OpenSheetMusicDisplay from 'opensheetmusicdisplay';
+import * as OSMDNamespace from 'opensheetmusicdisplay';
 import { generateMusicXML } from '../audio/noteUtils';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
@@ -25,12 +25,13 @@ const SheetMusic: React.FC<SheetMusicProps> = ({ midiNotes, currentIndex, isFive
       if (!containerRef.current) return;
 
       try {
-        const OSMDConstructor = (OpenSheetMusicDisplay as any).OpenSheetMusicDisplay || OpenSheetMusicDisplay;
+        // Handle various ESM/CJS export patterns from CDNs
+        const OSMDClass = (OSMDNamespace as any).OpenSheetMusicDisplay || 
+                          (OSMDNamespace as any).default?.OpenSheetMusicDisplay || 
+                          (OSMDNamespace as any).default;
 
-        if (typeof OSMDConstructor !== 'function') {
-          console.error("OSMD: No valid constructor found.");
-          setLoading(false);
-          return;
+        if (typeof OSMDClass !== 'function') {
+          throw new Error("OpenSheetMusicDisplay constructor not found in imported module.");
         }
 
         if (osmdRef.current) {
@@ -40,7 +41,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({ midiNotes, currentIndex, isFive
           containerRef.current.innerHTML = '';
         }
 
-        osmdRef.current = new OSMDConstructor(containerRef.current, {
+        osmdRef.current = new OSMDClass(containerRef.current, {
           autoResize: true,
           drawTitle: false,
           drawSubtitle: false,

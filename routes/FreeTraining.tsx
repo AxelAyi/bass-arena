@@ -7,6 +7,7 @@ import SessionRunner from '../components/SessionRunner';
 import MicPermissionDialog from '../components/MicPermissionDialog';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
+import { translateNoteName } from '../audio/noteUtils';
 
 const FreeTraining: React.FC = () => {
   const { settings, isMicEnabled } = useStore();
@@ -95,7 +96,11 @@ const FreeTraining: React.FC = () => {
             <Typography variant="subtitle2" gutterBottom fontWeight="bold">{t.strings}</Typography>
             <FormGroup row>
               {availableStrings.map(s => (
-                <FormControlLabel key={s} control={<Checkbox checked={selectedStrings[s as keyof typeof selectedStrings]} onChange={() => handleStringChange(s)} size="small" />} label={<Typography variant="body2">{s}</Typography>} />
+                <FormControlLabel 
+                  key={s} 
+                  control={<Checkbox checked={selectedStrings[s as keyof typeof selectedStrings]} onChange={() => handleStringChange(s)} size="small" />} 
+                  label={<Typography variant="body2">{translateNoteName(s, settings.noteNaming)}</Typography>} 
+                />
               ))}
             </FormGroup>
           </Grid>

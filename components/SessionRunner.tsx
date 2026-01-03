@@ -318,7 +318,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         </Typography>
         {!isSequenceMode && questions[currentIdx] && (
           <Typography variant="h5" color="primary">
-            {t.playNote} {t.onThe} <u>{questions[currentIdx].stringName}</u> {t.string}
+            {t.playNote} {t.onThe} <u>{translateNoteName(questions[currentIdx].stringName, settings.noteNaming)}</u> {t.string}
           </Typography>
         )}
       </Box>
