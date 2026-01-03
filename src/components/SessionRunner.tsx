@@ -1,60 +1,215 @@
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Typography, Button, IconButton, Container, Fade, CircularProgress } from '@mui/material';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Box, Typography, IconButton, Container, CircularProgress, Alert } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useStore } from '../state/store';
+import { useStore, SessionResult } from '../state/store';
 import { AudioEngine, AudioStats } from '../audio/audioEngine';
-import { FretPosition, getFretInfo } from '../data/fretboard';
-import { validateNote } from '../audio/noteUtils';
+import { FretPosition } from '../data/fretboard';
+import { validateNote, translateNoteName } from '../audio/noteUtils';
+import { translations } from '../localization/translations';
 import TimerBar from './TimerBar';
 import NoteDisplay from './NoteDisplay';
 import VuMeter from './VuMeter';
 import ScoreSummary from './ScoreSummary';
+import SheetMusic from './SheetMusic';
 
 interface SessionRunnerProps {
   questions: FretPosition[];
   onFinish: () => void;
+  title: string;
   day?: number;
+  programId?: string;
+  onReplay?: () => void;
+  onNext?: { label: string; action: () => void };
+  sequence?: number[]; 
 }
 
-const SessionRunner: React.FC<SessionRunnerProps> = ({ questions, onFinish, day }) => {
-  const { settings, addSessionResult } = useStore();
+export interface ExtendedSessionResult extends SessionResult {
+  failedNotes: string[];
+  title: string;
+}
+
+const SessionRunner: React.FC<SessionRunnerProps> = ({ 
+  questions, 
+  onFinish, 
+  title,
+  day, 
+  programId = 'free',
+  onReplay,
+  onNext,
+  sequence
+}) => {
+  const { settings, addSessionResult, recordAttempt } = useStore();
+  const t = translations[settings.language].session;
   
-  const [currentIdx, setCurrentIdx] = useState(0);
+  const [currentIdx, setCurrentIdx] = useState(0); 
+  const [sequenceIdx, setSequenceIdx] = useState(0); 
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(settings.timeLimit);
   const [isFinished, setIsFinished] = useState(false);
   const [detected, setDetected] = useState<AudioStats | null>(null);
   const [stabilityCounter, setStabilityCounter] = useState(0);
-  const [results, setResults] = useState<{ correct: boolean, time: number }[]>([]);
-  const [sessionStartTime] = useState(Date.now());
+  const [engineError, setEngineError] = useState<string | null>(null);
+  const [waitingForSilence, setWaitingForSilence] = useState(true);
 
+  const resultsRef = useRef<{ correct: boolean, time: number, note: string }[]>([]);
+  const scoreRef = useRef<number>(0);
+  const failedNotesRef = useRef<string[]>([]);
+  
   const audioEngineRef = useRef<AudioEngine | null>(null);
   const timerRef = useRef<any>(null);
   const questionStartTimeRef = useRef<number>(Date.now());
   const stabilityCheckRef = useRef<number | null>(null);
+  const wrongNoteLockoutRef = useRef<number | null>(null);
 
-  const currentQuestion = questions[currentIdx];
+  const isSequenceMode = !!sequence && sequence.length > 0;
+  
+  const currentTargetMidi = useMemo(() => {
+    if (isSequenceMode && sequence) {
+      return sequence[sequenceIdx] || 0;
+    }
+    return questions[currentIdx]?.midi || 0;
+  }, [isSequenceMode, sequence, sequenceIdx, questions, currentIdx]);
 
-  // Logic to handle incoming audio stats
+  const currentQuestionMeta = useMemo(() => {
+    if (isSequenceMode) return null;
+    return questions[currentIdx];
+  }, [isSequenceMode, questions, currentIdx]);
+
+  const currentTargetName = useMemo(() => {
+    if (isSequenceMode) {
+      const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      return translateNoteName(names[currentTargetMidi % 12], 'english');
+    }
+    return questions[currentIdx]?.noteName || '--';
+  }, [isSequenceMode, currentTargetMidi, questions, currentIdx]);
+
+  const finishSession = useCallback(() => {
+    setIsFinished(true);
+    if (audioEngineRef.current) audioEngineRef.current.stop();
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    const finalResults = useRef<{ correct: boolean, time: number, note: string }[]>(resultsRef.current).current;
+    const totalQuestionsAsked = isSequenceMode ? sequence?.length || 1 : questions.length;
+    const correctAnswers = finalResults.filter(r => r.correct).length;
+    const avgTime = finalResults.reduce((acc, r) => acc + r.time, 0) / (finalResults.length || 1);
+    
+    addSessionResult({
+      date: new Date().toISOString(),
+      score: Math.round(scoreRef.current * 10) / 10,
+      accuracy: totalQuestionsAsked > 0 ? (correctAnswers / totalQuestionsAsked) * 100 : 0,
+      avgTime,
+      day,
+      programId
+    });
+  }, [questions.length, sequence?.length, day, programId, isSequenceMode, addSessionResult]);
+
+  // Fix: Defined nextStep before handleSuccess and handleFailure
+  const nextStep = useCallback(() => {
+    setTimeLeft(settings.timeLimit);
+    questionStartTimeRef.current = Date.now();
+    setStabilityCounter(0);
+    stabilityCheckRef.current = null;
+    setWaitingForSilence(true); 
+
+    if (isSequenceMode && sequence) {
+      if (sequenceIdx < sequence.length - 1) {
+        setSequenceIdx(s => s + 1);
+      } else {
+        finishSession();
+      }
+    } else {
+       if (currentIdx < questions.length - 1) {
+        setCurrentIdx(i => i + 1);
+      } else {
+        finishSession();
+      }
+    }
+  }, [currentIdx, questions.length, sequenceIdx, sequence, isSequenceMode, settings.timeLimit, finishSession]);
+
+  const handleSuccess = useCallback(() => {
+    if (isFinished) return;
+    const timeTaken = (Date.now() - questionStartTimeRef.current) / 1000;
+    
+    // Record mastery if not in sequence mode
+    if (currentQuestionMeta) {
+      recordAttempt(currentQuestionMeta.string, currentQuestionMeta.fret, true, timeTaken);
+    }
+
+    scoreRef.current += (1 + (timeTaken < 1.5 ? 0.5 : 0));
+    setScore(scoreRef.current);
+    resultsRef.current.push({ correct: true, time: timeTaken, note: currentTargetName });
+    
+    const hasMore = isSequenceMode 
+      ? (sequence && sequenceIdx < sequence.length - 1)
+      : (currentIdx < questions.length - 1);
+
+    if (hasMore) {
+      nextStep();
+    } else {
+      finishSession();
+    }
+  }, [isFinished, isSequenceMode, sequence, sequenceIdx, currentIdx, questions.length, currentTargetName, currentQuestionMeta, nextStep, finishSession, recordAttempt]);
+
+  const handleFailure = useCallback(() => {
+    if (isFinished) return;
+    
+    if (audioEngineRef.current) {
+      audioEngineRef.current.playFailureSound();
+    }
+    
+    // Record mastery failure if not in sequence mode
+    if (currentQuestionMeta) {
+      recordAttempt(currentQuestionMeta.string, currentQuestionMeta.fret, false, settings.timeLimit);
+    }
+
+    const noteFailed = currentTargetName;
+    if (!failedNotesRef.current.includes(noteFailed)) {
+      failedNotesRef.current.push(noteFailed);
+    }
+    
+    resultsRef.current.push({ correct: false, time: settings.timeLimit, note: noteFailed });
+    
+    if (isSequenceMode) finishSession();
+    else {
+      if (currentIdx < questions.length - 1) {
+        nextStep();
+      } else {
+        finishSession();
+      }
+    }
+  }, [isFinished, settings.timeLimit, currentTargetName, isSequenceMode, currentIdx, questions.length, currentQuestionMeta, nextStep, finishSession, recordAttempt]);
+
   const handleAudioProcess = useCallback((stats: AudioStats) => {
     setDetected(stats);
+    const isActive = stats.rms >= settings.rmsThreshold;
     
-    if (!stats.pitch || stats.rms < settings.rmsThreshold) {
+    if (waitingForSilence) {
+      if (!isActive) {
+        setWaitingForSilence(false);
+      } else if (stats.pitch) {
+        const isTargetMatch = validateNote(stats.pitch.midi, currentTargetMidi, settings.strictOctave);
+        if (isTargetMatch) {
+          setWaitingForSilence(false);
+        }
+      }
+      return;
+    }
+
+    if (!stats.pitch || !isActive) {
       setStabilityCounter(0);
       stabilityCheckRef.current = null;
       return;
     }
 
-    const isValid = validateNote(stats.pitch.midi, currentQuestion.midi, settings.strictOctave);
+    const isValid = validateNote(stats.pitch.midi, currentTargetMidi, settings.strictOctave);
     
     if (isValid) {
       if (stabilityCheckRef.current === null) {
         stabilityCheckRef.current = Date.now();
+        wrongNoteLockoutRef.current = null;
       } else {
         const elapsed = Date.now() - stabilityCheckRef.current;
         setStabilityCounter(Math.min(100, (elapsed / settings.stabilityMs) * 100));
-        
         if (elapsed >= settings.stabilityMs) {
           handleSuccess();
         }
@@ -62,147 +217,148 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({ questions, onFinish, day 
     } else {
       setStabilityCounter(0);
       stabilityCheckRef.current = null;
+      
+      if (!settings.allowMultipleAttempts) {
+        if (wrongNoteLockoutRef.current === null) {
+          wrongNoteLockoutRef.current = Date.now();
+        } else if (Date.now() - wrongNoteLockoutRef.current > 80) {
+          handleFailure();
+        }
+      }
     }
-  }, [currentIdx, currentQuestion, settings]);
+  }, [currentTargetMidi, settings, handleSuccess, handleFailure, waitingForSilence]);
 
-  const handleSuccess = useCallback(() => {
-    if (isFinished) return;
-    
-    const timeTaken = (Date.now() - questionStartTimeRef.current) / 1000;
-    let bonus = 0;
-    if (timeTaken < 1.5) bonus = 0.5;
-    else if (timeTaken < 2.5) bonus = 0.25;
-
-    setScore(s => s + 1 + bonus);
-    setResults(r => [...r, { correct: true, time: timeTaken }]);
-    nextQuestion();
-  }, [currentIdx, isFinished]);
-
-  const handleTimeout = useCallback(() => {
-    setResults(r => [...r, { correct: false, time: settings.timeLimit }]);
-    nextQuestion();
-  }, [currentIdx, settings.timeLimit]);
-
-  const nextQuestion = useCallback(() => {
-    if (currentIdx < questions.length - 1) {
-      setCurrentIdx(i => i + 1);
-      setTimeLeft(settings.timeLimit);
-      questionStartTimeRef.current = Date.now();
-      setStabilityCounter(0);
-      stabilityCheckRef.current = null;
-    } else {
-      finishSession();
-    }
-  }, [currentIdx, questions.length, settings.timeLimit]);
-
-  const finishSession = useCallback(() => {
-    setIsFinished(true);
-    if (audioEngineRef.current) audioEngineRef.current.stop();
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    const totalQuestions = questions.length;
-    const correctAnswers = results.filter(r => r.correct).length;
-    const avgTime = results.reduce((acc, r) => acc + r.time, 0) / results.length;
-    
-    const finalResult = {
-      date: new Date().toISOString(),
-      score: Math.round(score * 10) / 10,
-      accuracy: (correctAnswers / totalQuestions) * 100,
-      avgTime,
-      day
-    };
-    
-    addSessionResult(finalResult);
-  }, [questions.length, results, score, day, addSessionResult]);
-
-  // Init audio and timers
   useEffect(() => {
     audioEngineRef.current = new AudioEngine(handleAudioProcess);
-    audioEngineRef.current.start(settings.selectedMicId);
-
+    const startEngine = async () => {
+      try {
+        await audioEngineRef.current?.start(settings.selectedMicId);
+        setEngineError(null);
+      } catch (err: any) {
+        setEngineError(err.message || "Could not start audio engine.");
+      }
+    };
+    startEngine();
+    
     timerRef.current = setInterval(() => {
+      if (engineError || isFinished) return;
       setTimeLeft(prev => {
-        if (prev <= 0.1) {
-          handleTimeout();
+        if (prev <= 0.05) {
+          handleFailure();
           return settings.timeLimit;
         }
-        return prev - 0.1;
+        return prev - 0.05;
       });
-    }, 100);
+    }, 50);
 
     return () => {
       if (audioEngineRef.current) audioEngineRef.current.stop();
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [handleAudioProcess, handleTimeout, settings.selectedMicId, settings.timeLimit]);
+  }, [handleAudioProcess, settings.selectedMicId, settings.timeLimit, engineError, isFinished, handleFailure]);
 
-  if (isFinished) {
-    const totalQuestions = questions.length;
-    const correctAnswers = results.filter(r => r.correct).length;
-    const avgTime = results.reduce((acc, r) => acc + r.time, 0) / results.length;
+  const summaryResult = useMemo(() => {
+    if (!isFinished) return null;
+    const finalResults = resultsRef.current;
+    const totalExpected = isSequenceMode ? sequence?.length || 1 : questions.length;
+    const correctAnswers = finalResults.filter(r => r.correct).length;
+    const avgTime = finalResults.reduce((acc, r) => acc + r.time, 0) / (finalResults.length || 1);
     
+    return {
+      date: new Date().toISOString(),
+      score: Math.round(scoreRef.current * 10) / 10,
+      accuracy: totalExpected > 0 ? (correctAnswers / totalExpected) * 100 : 0,
+      avgTime,
+      day,
+      programId,
+      failedNotes: [...failedNotesRef.current],
+      title
+    } as ExtendedSessionResult;
+  }, [isFinished, isSequenceMode, questions.length, sequence?.length, day, programId, title]);
+
+  if (engineError) {
+    return (
+      <Container sx={{ py: 10 }}>
+        <Alert severity="error" variant="filled">
+          <Typography variant="h6">Audio Initialization Error</Typography>
+          <Typography variant="body2">{engineError}</Typography>
+        </Alert>
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <IconButton onClick={onFinish} color="inherit"><CloseIcon /></IconButton>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (isFinished && summaryResult) {
+    const showNext = onNext && summaryResult.accuracy >= settings.minUnlockAccuracy;
+
     return (
       <ScoreSummary 
-        result={{
-          date: new Date().toISOString(),
-          score: Math.round(score * 10) / 10,
-          accuracy: (correctAnswers / totalQuestions) * 100,
-          avgTime
-        }} 
+        result={summaryResult} 
         onClose={onFinish} 
+        onReplay={onReplay} 
+        onNext={showNext ? onNext : undefined} 
       />
     );
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">Question {currentIdx + 1} / {questions.length}</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h6" color="primary">Score: {score}</Typography>
-          <IconButton onClick={onFinish} color="inherit"><CloseIcon /></IconButton>
+    <Container maxWidth="md" sx={{ py: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+        <Box>
+          <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{title}</Typography>
+          <Typography variant="h6" color="textSecondary">
+            {isSequenceMode ? t.scaleDrill : `${t.question} ${currentIdx + 1} / ${questions.length}`}
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: 'right' }}>
+          <Typography variant="h6" color="primary">{t.score}: {score}</Typography>
+          <IconButton onClick={onFinish} size="small"><CloseIcon /></IconButton>
         </Box>
       </Box>
 
       <TimerBar remaining={timeLeft} total={settings.timeLimit} />
 
-      <Box sx={{ textAlign: 'center', my: 6 }}>
-        <Typography variant="h5" color="textSecondary" gutterBottom>
-          Play note
+      {isSequenceMode && sequence && (
+        <SheetMusic 
+          midiNotes={sequence} 
+          currentIndex={sequenceIdx} 
+          isFiveString={settings.isFiveString}
+        />
+      )}
+
+      <Box sx={{ textAlign: 'center', mb: 4 }}>
+        <Typography variant="h2" fontWeight="bold" sx={{ textTransform: 'uppercase' }}>
+          {translateNoteName(currentTargetName, settings.noteNaming)}
         </Typography>
-        <Typography variant="h2" sx={{ fontWeight: 800, mb: 1 }}>
-          {currentQuestion.noteName}
-        </Typography>
-        <Typography variant="h5" color="primary">
-          on the <span style={{ textDecoration: 'underline' }}>{currentQuestion.stringName} string</span>
-        </Typography>
-        {settings.showFretNumber && (
-          <Typography variant="subtitle1" color="textSecondary" sx={{ mt: 1 }}>
-            (Hint: Fret {currentQuestion.fret})
+        {!isSequenceMode && questions[currentIdx] && (
+          <Typography variant="h5" color="primary">
+            {t.playNote} {t.onThe} <u>{translateNoteName(questions[currentIdx].stringName, settings.noteNaming)}</u> {t.string}
           </Typography>
         )}
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
         <NoteDisplay 
-          detectedNote={detected?.pitch || null} 
-          targetNoteName={currentQuestion.noteName}
+          detectedNote={detected && detected.rms >= settings.rmsThreshold ? detected.pitch : null} 
+          targetNoteName={currentTargetName}
           isCorrect={stabilityCounter === 100}
           isAlmost={stabilityCounter > 0 && stabilityCounter < 100}
-          debug={true}
+          debug={false}
           rms={detected?.rms || 0}
         />
-        
         <Box sx={{ width: 250 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
             <CircularProgress 
               variant="determinate" 
               value={stabilityCounter} 
-              size={40} 
-              thickness={5} 
+              size={30} 
               color={stabilityCounter === 100 ? "success" : "primary"}
             />
-            <Typography variant="body2">Stability</Typography>
+            <Typography variant="body2" color="textSecondary">
+              {waitingForSilence ? t.mute : t.stability}
+            </Typography>
           </Box>
           <VuMeter rms={detected?.rms || 0} threshold={settings.rmsThreshold} />
         </Box>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Box, Typography, IconButton, Container, CircularProgress, Alert } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -39,7 +38,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   onNext,
   sequence
 }) => {
-  const { settings, addSessionResult } = useStore();
+  const { settings, addSessionResult, recordAttempt } = useStore();
   const t = translations[settings.language].session;
   
   const [currentIdx, setCurrentIdx] = useState(0); 
@@ -70,6 +69,11 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     }
     return questions[currentIdx]?.midi || 0;
   }, [isSequenceMode, sequence, sequenceIdx, questions, currentIdx]);
+
+  const currentQuestionMeta = useMemo(() => {
+    if (isSequenceMode) return null;
+    return questions[currentIdx];
+  }, [isSequenceMode, questions, currentIdx]);
 
   const currentTargetName = useMemo(() => {
     if (isSequenceMode) {
@@ -124,6 +128,12 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const handleSuccess = useCallback(() => {
     if (isFinished) return;
     const timeTaken = (Date.now() - questionStartTimeRef.current) / 1000;
+    
+    // Record mastery if not in sequence mode
+    if (currentQuestionMeta) {
+      recordAttempt(currentQuestionMeta.string, currentQuestionMeta.fret, true, timeTaken);
+    }
+
     scoreRef.current += (1 + (timeTaken < 1.5 ? 0.5 : 0));
     setScore(scoreRef.current);
     resultsRef.current.push({ correct: true, time: timeTaken, note: currentTargetName });
@@ -137,7 +147,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     } else {
       finishSession();
     }
-  }, [isFinished, isSequenceMode, sequence, sequenceIdx, currentIdx, questions.length, currentTargetName, nextStep, finishSession]);
+  }, [isFinished, isSequenceMode, sequence, sequenceIdx, currentIdx, questions.length, currentTargetName, currentQuestionMeta, nextStep, finishSession, recordAttempt]);
 
   const handleFailure = useCallback(() => {
     if (isFinished) return;
@@ -146,6 +156,11 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       audioEngineRef.current.playFailureSound();
     }
     
+    // Record mastery failure if not in sequence mode
+    if (currentQuestionMeta) {
+      recordAttempt(currentQuestionMeta.string, currentQuestionMeta.fret, false, settings.timeLimit);
+    }
+
     const noteFailed = currentTargetName;
     if (!failedNotesRef.current.includes(noteFailed)) {
       failedNotesRef.current.push(noteFailed);
@@ -161,7 +176,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         finishSession();
       }
     }
-  }, [isFinished, settings.timeLimit, currentTargetName, isSequenceMode, currentIdx, questions.length, nextStep, finishSession]);
+  }, [isFinished, settings.timeLimit, currentTargetName, isSequenceMode, currentIdx, questions.length, currentQuestionMeta, nextStep, finishSession, recordAttempt]);
 
   const handleAudioProcess = useCallback((stats: AudioStats) => {
     setDetected(stats);
@@ -312,7 +327,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         />
       )}
 
-      <Box sx={{ textAlign: 'center', my: 4 }}>
+      <Box sx={{ textAlign: 'center', mb: 4 }}>
         <Typography variant="h2" fontWeight="bold" sx={{ textTransform: 'uppercase' }}>
           {translateNoteName(currentTargetName, settings.noteNaming)}
         </Typography>

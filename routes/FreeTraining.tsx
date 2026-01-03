@@ -1,16 +1,20 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Grid2 as Grid } from '@mui/material';
+import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Divider, Card, CardContent, Stack } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { useLocation } from 'react-router-dom';
-import { getAllPositionsInRanges, FretPosition } from '../data/fretboard';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import { getAllPositionsInRanges, FretPosition, getFretInfo } from '../data/fretboard';
 import SessionRunner from '../components/SessionRunner';
 import MicPermissionDialog from '../components/MicPermissionDialog';
-import { useStore } from '../state/store';
+import FretboardHeatmap from '../components/FretboardHeatmap';
+import { useStore, FretboardItemStats } from '../state/store';
 import { translations } from '../localization/translations';
 import { translateNoteName } from '../audio/noteUtils';
 
 const FreeTraining: React.FC = () => {
-  const { settings, isMicEnabled } = useStore();
+  const { settings, isMicEnabled, mastery } = useStore();
   const t = translations[settings.language].training;
   const location = useLocation();
   
@@ -20,6 +24,7 @@ const FreeTraining: React.FC = () => {
   const [selectedStrings, setSelectedStrings] = useState({ G: true, D: true, A: true, E: true, B: false });
   const [questionCount, setQuestionCount] = useState(10);
   const [questions, setQuestions] = useState<FretPosition[]>([]);
+  const [sessionTitle, setSessionTitle] = useState(t.title);
   const [micDialogOpen, setMicDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -30,28 +35,71 @@ const FreeTraining: React.FC = () => {
     setSelectedStrings(prev => ({ ...prev, [name]: !prev[name as keyof typeof prev] }));
   };
 
-  const executeSession = useCallback(() => {
-    const stringIndices: number[] = [];
-    if (selectedStrings.G) stringIndices.push(0);
-    if (selectedStrings.D) stringIndices.push(1);
-    if (selectedStrings.A) stringIndices.push(2);
-    if (selectedStrings.E) stringIndices.push(3);
-    if (settings.isFiveString && selectedStrings.B) stringIndices.push(4);
-
-    const pool = getAllPositionsInRanges(fretRange[1], stringIndices).filter(p => p.fret >= fretRange[0]);
-    if (pool.length === 0) return;
+  const getWeaknessScore = (stats: FretboardItemStats | undefined) => {
+    if (!stats || stats.attempts === 0) return 0.5; // Neutral for new notes
     
-    let shuffled = [...pool].sort(() => 0.5 - Math.random());
-    let finalQuestions = [...shuffled];
-    while (finalQuestions.length < questionCount) {
-        const more = [...pool].sort(() => 0.5 - Math.random());
-        finalQuestions = [...finalQuestions, ...more];
+    const accuracy = stats.corrects / stats.attempts;
+    const avgTime = stats.totalTime / stats.attempts;
+    
+    // Mastery components
+    const accScore = 1 - accuracy;
+    const speedScore = Math.min(1, avgTime / settings.timeLimit);
+    
+    // Recency (Normalized boost for stale notes)
+    const hoursSinceLast = (Date.now() - stats.lastAttempt) / (1000 * 60 * 60);
+    const recencyBoost = Math.min(0.2, hoursSinceLast / 100); 
+
+    return (accScore * 0.6) + (speedScore * 0.3) + (recencyBoost * 0.1);
+  };
+
+  const executeSession = useCallback((customQs?: FretPosition[], customTitle?: string) => {
+    if (customQs) {
+        setQuestions(customQs);
+        setSessionTitle(customTitle || t.title);
+    } else {
+        const stringIndices: number[] = [];
+        if (selectedStrings.G) stringIndices.push(0);
+        if (selectedStrings.D) stringIndices.push(1);
+        if (selectedStrings.A) stringIndices.push(2);
+        if (selectedStrings.E) stringIndices.push(3);
+        if (settings.isFiveString && selectedStrings.B) stringIndices.push(4);
+
+        const pool = getAllPositionsInRanges(fretRange[1], stringIndices).filter(p => p.fret >= fretRange[0]);
+        if (pool.length === 0) return;
+        
+        let shuffled = [...pool].sort(() => 0.5 - Math.random());
+        let finalQuestions = [...shuffled];
+        while (finalQuestions.length < questionCount) {
+            const more = [...pool].sort(() => 0.5 - Math.random());
+            finalQuestions = [...finalQuestions, ...more];
+        }
+        setQuestions(finalQuestions.slice(0, questionCount));
+        setSessionTitle(t.title);
     }
     
-    setQuestions(finalQuestions.slice(0, questionCount));
     setSessionKey(prev => prev + 1);
     setActive(true);
-  }, [fretRange, selectedStrings, questionCount, settings.isFiveString]);
+  }, [fretRange, selectedStrings, questionCount, settings.isFiveString, t.title]);
+
+  const handleFixWeakSpots = () => {
+    const stringIndices = settings.isFiveString ? [0, 1, 2, 3, 4] : [0, 1, 2, 3];
+    const fullPool = getAllPositionsInRanges(12, stringIndices);
+    
+    // Sort pool by weakness score
+    const scoredPool = fullPool.map(pos => ({
+        pos,
+        score: getWeaknessScore(mastery[`s${pos.string}f${pos.fret}`])
+    })).sort((a, b) => b.score - a.score);
+
+    // Take top 10 weak spots
+    const weakQs = scoredPool.slice(0, 10).map(item => item.pos);
+    
+    if (isMicEnabled) {
+        executeSession(weakQs, t.fixWeakSpots);
+    } else {
+        setMicDialogOpen(true);
+    }
+  };
 
   const startSession = useCallback(() => {
     if (isMicEnabled) {
@@ -66,7 +114,7 @@ const FreeTraining: React.FC = () => {
       <SessionRunner 
         key={sessionKey} 
         questions={questions} 
-        title={t.title}
+        title={sessionTitle}
         onFinish={() => setActive(false)} 
         onReplay={startSession}
       />
@@ -79,42 +127,139 @@ const FreeTraining: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 2, maxWidth: 800, mx: 'auto' }}>
-      <Typography variant="h5" gutterBottom fontWeight="bold">{t.title}</Typography>
-      <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>{t.description}</Typography>
-      <Paper sx={{ p: 3, borderRadius: 2 }}>
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Typography variant="subtitle2" gutterBottom fontWeight="bold">
-              {t.fretRange}: {fretRange[0]} - {fretRange[1]}
+    <Box sx={{ pb: 4 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" gutterBottom fontWeight="900" sx={{ letterSpacing: -1 }}>{t.title}</Typography>
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>{t.description}</Typography>
+      </Box>
+
+      <Stack spacing={4}>
+        {/* 1. Neck Mastery Map + Insights Block */}
+        <Paper sx={{ p: 3, borderRadius: 2 }}>
+            <Grid container spacing={4}>
+                <Grid size={{ xs: 12, lg: 9 }}>
+                    <FretboardHeatmap onSelectPosition={(s, f) => {
+                        executeSession([getFretInfo(s, f)], `Target Drill: ${getFretInfo(s, f).noteName}`);
+                    }} />
+                </Grid>
+                <Grid size={{ xs: 12, lg: 3 }}>
+                    <Typography variant="subtitle2" gutterBottom fontWeight="900" sx={{ textTransform: 'uppercase', mb: 3 }}>
+                        Fretboard Insights
+                    </Typography>
+                    <Stack spacing={3}>
+                        <Box>
+                            <Typography variant="caption" color="textSecondary" fontWeight="bold">{t.neckCoverage}</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                                <Typography variant="h4" fontWeight="900">
+                                    {Math.round((Object.keys(mastery).length / (settings.isFiveString ? 65 : 52)) * 100)}%
+                                </Typography>
+                                <Typography variant="caption">explored</Typography>
+                            </Box>
+                        </Box>
+                        <Divider sx={{ opacity: 0.1 }} />
+                        <Box>
+                            <Typography variant="caption" color="textSecondary" fontWeight="bold" sx={{ display: 'block', mb: 1.5 }}>{t.topWeakNotes}</Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                {Object.entries(mastery)
+                                    .map(([key, stats]) => ({ key, score: getWeaknessScore(stats as FretboardItemStats) }))
+                                    .sort((a, b) => b.score - a.score)
+                                    .slice(0, 5)
+                                    .map(({ key }) => {
+                                        const s = parseInt(key.split('f')[0].substring(1));
+                                        const f = parseInt(key.split('f')[1]);
+                                        const info = getFretInfo(s, f);
+                                        return (
+                                            <Box 
+                                                key={key} 
+                                                sx={{ 
+                                                    px: 1.5, py: 0.5, 
+                                                    bgcolor: 'rgba(244, 67, 54, 0.1)', 
+                                                    border: '1px solid rgba(244, 67, 54, 0.2)',
+                                                    borderRadius: 1,
+                                                    color: '#f44336',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
+                                                {translateNoteName(info.noteName, settings.noteNaming)} ({translateNoteName(info.stringName, settings.noteNaming)})
+                                            </Box>
+                                        );
+                                    })}
+                                {Object.keys(mastery).length === 0 && <Typography variant="caption" color="text.disabled">No data yet</Typography>}
+                            </Box>
+                        </Box>
+                    </Stack>
+                </Grid>
+            </Grid>
+        </Paper>
+
+        {/* 2. Fix My Weak Spots Block */}
+        <Card 
+          sx={{ 
+              bgcolor: 'rgba(33, 150, 243, 0.05)', 
+              border: '1px solid rgba(33, 150, 243, 0.2)',
+              borderRadius: 2
+          }}
+          elevation={0}
+        >
+          <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                  <PsychologyIcon color="primary" />
+                  <Typography variant="h6" fontWeight="800">{t.fixWeakSpots}</Typography>
+              </Box>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 2.5 }}>
+                  {t.weakSpotsDesc}
+              </Typography>
+              <Button 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={handleFixWeakSpots}
+                  sx={{ py: 1, fontWeight: 800, px: 4 }}
+              >
+                  {t.start}
+              </Button>
+          </CardContent>
+        </Card>
+
+        {/* 3. Custom Session Block */}
+        <Paper sx={{ p: 3, borderRadius: 2 }}>
+            <Typography variant="subtitle2" gutterBottom fontWeight="900" sx={{ textTransform: 'uppercase', color: 'primary.main', mb: 3 }}>
+                Custom Session Setup
             </Typography>
-            <Box sx={{ px: 2, mt: 3 }}>
-              <Slider value={fretRange} onChange={(_, val) => setFretRange(val as number[])} valueLabelDisplay="auto" min={0} max={24} size="small" />
+            <Grid container spacing={4}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography variant="caption" gutterBottom fontWeight="bold" sx={{ display: 'block', color: 'text.secondary', mb: 2 }}>
+                {t.fretRange}: {fretRange[0]} - {fretRange[1]}
+                </Typography>
+                <Box sx={{ px: 1 }}>
+                <Slider value={fretRange} onChange={(_, val) => setFretRange(val as number[])} valueLabelDisplay="auto" min={0} max={24} size="small" />
+                </Box>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography variant="caption" gutterBottom fontWeight="bold" sx={{ display: 'block', color: 'text.secondary', mb: 1 }}>{t.strings}</Typography>
+                <FormGroup row>
+                {availableStrings.map(s => (
+                    <FormControlLabel 
+                    key={s} 
+                    control={<Checkbox checked={selectedStrings[s as keyof typeof selectedStrings]} onChange={() => handleStringChange(s)} size="small" />} 
+                    label={<Typography variant="body2" fontWeight="bold">{translateNoteName(s, settings.noteNaming)}</Typography>} 
+                    />
+                ))}
+                </FormGroup>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+                <Typography variant="caption" gutterBottom fontWeight="bold" sx={{ display: 'block', color: 'text.secondary', mb: 2 }}>{t.numQuestions}: {questionCount}</Typography>
+                <Slider value={questionCount} onChange={(_, val) => setQuestionCount(val as number)} min={5} max={50} step={5} marks valueLabelDisplay="auto" size="small" />
+            </Grid>
+            </Grid>
+            <Box sx={{ mt: 4 }}>
+            <Button variant="outlined" fullWidth onClick={startSession} startIcon={<TrackChangesIcon />} disabled={availableStrings.every(s => !selectedStrings[s as keyof typeof selectedStrings])} sx={{ py: 1.5, fontWeight: 800 }}>
+                Start Custom Session
+            </Button>
             </Box>
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Typography variant="subtitle2" gutterBottom fontWeight="bold">{t.strings}</Typography>
-            <FormGroup row>
-              {availableStrings.map(s => (
-                <FormControlLabel 
-                  key={s} 
-                  control={<Checkbox checked={selectedStrings[s as keyof typeof selectedStrings]} onChange={() => handleStringChange(s)} size="small" />} 
-                  label={<Typography variant="body2">{translateNoteName(s, settings.noteNaming)}</Typography>} 
-                />
-              ))}
-            </FormGroup>
-          </Grid>
-          <Grid size={12}>
-            <Typography variant="subtitle2" gutterBottom fontWeight="bold">{t.numQuestions}: {questionCount}</Typography>
-            <Slider value={questionCount} onChange={(_, val) => setQuestionCount(val as number)} min={5} max={100} step={5} marks valueLabelDisplay="auto" size="small" />
-          </Grid>
-        </Grid>
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Button variant="contained" size="medium" fullWidth onClick={startSession} disabled={availableStrings.every(s => !selectedStrings[s as keyof typeof selectedStrings])}>
-            {t.start}
-          </Button>
-        </Box>
-      </Paper>
+        </Paper>
+      </Stack>
+
       <MicPermissionDialog 
         open={micDialogOpen} 
         onClose={() => setMicDialogOpen(false)} 

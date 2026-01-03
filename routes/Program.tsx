@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Box, Typography, Grid2 as Grid, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper } from '@mui/material';
+import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { useLocation } from 'react-router-dom';
 import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -36,7 +37,6 @@ const Program: React.FC = () => {
     PROGRAMS.find(p => p.id === activeProgramId) || PROGRAMS[0],
   [activeProgramId]);
 
-  // Filter tasks based on whether the user has a 5-string bass
   const filteredDays = useMemo(() => {
     return activeProgram.days.filter(day => {
       if (!settings.isFiveString && day.isFiveStringOnly) return false;

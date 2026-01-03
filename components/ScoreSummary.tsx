@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Box, Typography, Button, Paper, Grid2 as Grid, Divider, Chip } from '@mui/material';
+import { Box, Typography, Button, Paper, Divider, Chip } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -35,17 +36,17 @@ const ScoreSummary: React.FC<ScoreSummaryProps> = ({ result, onClose, onReplay, 
       </Typography>
       
       <Grid container spacing={2} sx={{ my: 2 }}>
-        <Grid size={4} sx={{ textAlign: 'center' }}>
+        <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
           <StarIcon color="primary" sx={{ fontSize: 24, mb: 0.5 }} />
           <Typography variant="h6" fontWeight="bold">{result.score}</Typography>
           <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>{t.totalScore}</Typography>
         </Grid>
-        <Grid size={4} sx={{ textAlign: 'center' }}>
+        <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
           <CheckCircleOutlineIcon color="success" sx={{ fontSize: 24, mb: 0.5 }} />
           <Typography variant="h6" fontWeight="bold">{result.accuracy.toFixed(0)}%</Typography>
           <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>{t.accuracy}</Typography>
         </Grid>
-        <Grid size={4} sx={{ textAlign: 'center' }}>
+        <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
           <TimerIcon color="secondary" sx={{ fontSize: 24, mb: 0.5 }} />
           <Typography variant="h6" fontWeight="bold">{result.avgTime.toFixed(1)}s</Typography>
           <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>{t.avgSpeed}</Typography>

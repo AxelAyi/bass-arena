@@ -22,16 +22,12 @@ export class AudioEngine {
     this.onProcess = onProcess;
   }
 
-  async start(deviceId?: string) {
-    // 1. Fully release previous hardware and context before requesting new ones
+  async start(deviceId?: string): Promise<AudioContext | null> {
     await this.stop();
 
-    // 2. Prepare strict constraints to force the hardware switch
     const constraints: MediaStreamConstraints = {
       audio: {
-        // Use 'exact' to ensure the browser doesn't silently fallback to the default device
         deviceId: deviceId && deviceId !== 'default' && deviceId !== '' ? { exact: deviceId } : undefined,
-        // Disable processing for raw instrument signal (better for pitch detection)
         autoGainControl: false,
         noiseSuppression: false,
         echoCancellation: false
@@ -40,11 +36,10 @@ export class AudioEngine {
 
     try {
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       
       if (!this.audioContext) {
-        throw new Error("AudioContext creation failed. Check browser compatibility.");
+        throw new Error("AudioContext creation failed.");
       }
 
       if (this.audioContext.state === 'suspended') {
@@ -53,7 +48,6 @@ export class AudioEngine {
 
       this.source = this.audioContext.createMediaStreamSource(this.stream);
 
-      // Bass fundamental focus: Wide low-pass filter to clean up harmonics
       this.filter = this.audioContext.createBiquadFilter();
       this.filter.type = 'lowpass';
       this.filter.frequency.value = 1000;
@@ -65,7 +59,6 @@ export class AudioEngine {
       this.filter.connect(this.analyzer);
       this.analyzer.connect(this.audioContext.destination);
 
-      // Get the name of the actual device being used
       const activeDeviceLabel = this.stream.getAudioTracks()[0]?.label;
 
       this.analyzer.onaudioprocess = (e) => {
@@ -84,11 +77,11 @@ export class AudioEngine {
           activeDeviceLabel
         });
       };
+
+      return this.audioContext;
     } catch (err: any) {
       console.error("AudioEngine Start Error:", err);
-      // If the 'exact' constraint failed (e.g. device disconnected), try one fallback to default
       if (deviceId && err.name === 'OverconstrainedError') {
-          console.warn("Requested device unavailable, falling back to default...");
           return this.start();
       }
       await this.stop();
