@@ -1,0 +1,7 @@
+{
+  "name": "BassArena: 30-Day Fretboard Trainer",
+  "description": "A browser-based interactive bass guitar fretboard trainer using real-time pitch detection to validate notes played on your actual instrument.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
