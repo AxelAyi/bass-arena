@@ -23,7 +23,7 @@ const About: React.FC = () => {
           <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', justifyContent: 'center' }}>
             <Avatar
               alt="Axel A."
-              src="input_file_0.png"
+              src="axel-mononeon.jpg"
               sx={{ 
                 width: 220, 
                 height: 220, 
