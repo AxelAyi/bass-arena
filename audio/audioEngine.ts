@@ -16,9 +16,9 @@ export class AudioEngine {
   private filter: BiquadFilterNode | null = null;
   private onProcess: (stats: AudioStats) => void;
 
-  // Reduced from 4096 to 2048 to cut latency in half (~46ms @ 44.1kHz)
-  // 2048 is still enough for low bass frequencies down to ~22Hz.
-  private bufferSize = 2048; 
+  // Increased to 4096 for better low-frequency resolution (Low B is ~31Hz)
+  // This gives the YIN algorithm enough "width" to see multiple periods of a low wave.
+  private bufferSize = 4096; 
 
   constructor(onProcess: (stats: AudioStats) => void) {
     this.onProcess = onProcess;
@@ -50,11 +50,12 @@ export class AudioEngine {
 
       this.source = this.audioContext.createMediaStreamSource(this.stream);
 
-      // Tightened lowpass to focus on bass fundamentals
+      // Low-pass set to 350Hz. This kills harmonics and focuses strictly on the bass fundamentals.
+      // Even high notes on the G string (e.g. 24th fret G4) are ~392Hz, so 350-400 is the ideal range.
       this.filter = this.audioContext.createBiquadFilter();
       this.filter.type = 'lowpass';
-      this.filter.frequency.value = 600; 
-      this.filter.Q.value = 1;
+      this.filter.frequency.value = 350; 
+      this.filter.Q.value = 0.8;
 
       this.analyzer = this.audioContext.createScriptProcessor(this.bufferSize, 1, 1);
       
@@ -70,8 +71,8 @@ export class AudioEngine {
         const inputData = e.inputBuffer.getChannelData(0);
         const rms = calculateRMS(inputData);
         
-        // Use a slightly more aggressive threshold for faster candidate rejection
-        const pitchFreq = detectPitchYIN(inputData, this.audioContext.sampleRate, 0.12);
+        // Slightly lower threshold (0.1) to allow YIN to be more persistent with low-energy waves
+        const pitchFreq = detectPitchYIN(inputData, this.audioContext.sampleRate, 0.1);
         const pitch = pitchFreq ? frequencyToNote(pitchFreq) : null;
         
         this.onProcess({

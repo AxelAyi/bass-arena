@@ -1,8 +1,7 @@
-
 export function detectPitchYIN(
   buffer: Float32Array,
   sampleRate: number,
-  threshold: number = 0.15 // Slightly increased default threshold for better candidate catching
+  threshold: number = 0.15 
 ): number | null {
   const bufferSize = buffer.length;
   const halfBufferSize = Math.floor(bufferSize / 2);
@@ -21,7 +20,7 @@ export function detectPitchYIN(
   let runningSum = 0;
   for (let tau = 1; tau < halfBufferSize; tau++) {
     runningSum += yinBuffer[tau];
-    yinBuffer[tau] *= tau / (runningSum || 1); // Avoid division by zero
+    yinBuffer[tau] *= tau / (runningSum || 1); 
   }
 
   // Step 3: Absolute threshold search
@@ -36,8 +35,6 @@ export function detectPitchYIN(
     }
   }
 
-  // If no tau was found below threshold, look for the global minimum
-  // This makes the tuner more "sensitive" to weak signals
   if (tau === -1) {
     let minVal = 1;
     for (let t = 1; t < halfBufferSize; t++) {
@@ -46,11 +43,12 @@ export function detectPitchYIN(
         tau = t;
       }
     }
-    // Permissive noise floor (0.6) instead of 0.4 to allow weaker/noisier signals to be detected
-    if (minVal > 0.6) return null;
+    // Permissive noise floor for bass: 0.7 allows for slightly more "noisy" autocorrelation 
+    // which is common when plucking low strings.
+    if (minVal > 0.7) return null;
   }
 
-  // Step 4: Parabolic interpolation for sub-sample accuracy
+  // Step 4: Parabolic interpolation
   let betterTau: number;
   if (tau > 0 && tau < halfBufferSize - 1) {
     const s0 = yinBuffer[tau - 1];
