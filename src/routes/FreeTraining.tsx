@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Divider, Card, CardContent, Stack, Chip, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Divider, Stack, Chip, useTheme, useMediaQuery, IconButton, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { useLocation } from 'react-router-dom';
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -7,7 +7,7 @@ import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 
-import { getAllPositionsInRanges, FretPosition, getFretInfo } from '../data/fretboard';
+import { getAllPositionsInRanges, FretPosition } from '../data/fretboard';
 import SessionRunner from '../components/SessionRunner';
 import MicPermissionDialog from '../components/MicPermissionDialog';
 import FretboardHeatmap from '../components/FretboardHeatmap';
@@ -39,18 +39,29 @@ const FreeTraining: React.FC = () => {
     setSelectedStrings(prev => ({ ...prev, [name]: !prev[name as keyof typeof prev] }));
   };
 
+  /**
+   * Defines a Mastered state: 
+   * High accuracy (>80%) and at least 3 attempts to prove consistency.
+   */
+  const isMastered = (stats: FretboardItemStats | undefined): boolean => {
+    if (!stats || stats.attempts < 3) return false;
+    return (stats.corrects / stats.attempts) > 0.8;
+  };
+
   const getWeaknessScore = (stats: FretboardItemStats | undefined) => {
-    if (!stats || stats.attempts === 0) return 1.0; // High weakness for never played
+    if (!stats || stats.attempts === 0) return 1.0; 
     
     const accuracy = stats.corrects / stats.attempts;
+    const avgTime = stats.totalTime / stats.attempts;
+    
     const accScore = 1 - accuracy;
+    const speedScore = Math.min(1, avgTime / settings.timeLimit);
     
-    // Time is no longer considered in the calculation of the Mastered state or sorting.
-    // Recency boost stays to ensure we revisit notes that haven't been practiced in a while.
+    // Recency boost ensures we don't completely ignore non-mastered notes for long periods.
     const hoursSinceLast = (Date.now() - stats.lastAttempt) / (1000 * 60 * 60);
-    const recencyBoost = Math.min(0.15, hoursSinceLast / 168); // Prioritize if not seen in a week
+    const recencyBoost = Math.min(0.2, hoursSinceLast / 168); // Max boost after 1 week
     
-    return accScore + recencyBoost;
+    return (accScore * 0.6) + (speedScore * 0.3) + (recencyBoost * 0.1);
   };
 
   const executeSession = useCallback((customQs?: FretPosition[], customTitle?: string) => {
@@ -85,13 +96,33 @@ const FreeTraining: React.FC = () => {
   const handleFixWeakSpots = () => {
     const stringIndices = settings.isFiveString ? [0, 1, 2, 3, 4] : [0, 1, 2, 3];
     const fullPool = getAllPositionsInRanges(12, stringIndices);
-    const scoredPool = fullPool.map(pos => ({
-        pos,
-        score: getWeaknessScore(mastery[`s${pos.string}f${pos.fret}`])
-    })).sort((a, b) => b.score - a.score);
+    
+    const scoredPool = fullPool
+        .map(pos => {
+            const stats = mastery[`s${pos.string}f${pos.fret}`];
+            return {
+                pos,
+                stats,
+                score: getWeaknessScore(stats),
+                mastered: isMastered(stats)
+            };
+        })
+        .filter(item => !item.mastered) // CRITICAL: Only target non-mastered notes
+        .sort((a, b) => b.score - a.score);
 
     const weakQs = scoredPool.slice(0, 10).map(item => item.pos);
     
+    if (weakQs.length === 0) {
+        // Fallback if user mastered everything: just do a general refresh of the least practiced
+        const maintenanceQs = fullPool
+            .map(pos => ({ pos, stats: mastery[`s${pos.string}f${pos.fret}`] }))
+            .sort((a, b) => (a.stats?.lastAttempt || 0) - (b.stats?.lastAttempt || 0))
+            .slice(0, 10)
+            .map(i => i.pos);
+        executeSession(maintenanceQs, "Maintenance Drill");
+        return;
+    }
+
     if (isMicEnabled) {
         executeSession(weakQs, t.fixWeakSpots);
     } else {
@@ -107,6 +138,23 @@ const FreeTraining: React.FC = () => {
     }
   }, [isMicEnabled, executeSession]);
 
+  const availableStrings = ['G', 'D', 'A', 'E'];
+  if (settings.isFiveString) {
+    availableStrings.push('B');
+  }
+
+  const totalPossibleNotes = settings.isFiveString ? 65 : 52;
+  const coveragePercent = Math.round((Object.keys(mastery).length / totalPossibleNotes) * 100);
+  
+  // Global Performance Stats
+  const masteryValues = Object.values(mastery) as FretboardItemStats[];
+  const totalAttempts = masteryValues.reduce((acc, curr) => acc + curr.attempts, 0);
+  const totalCorrects = masteryValues.reduce((acc, curr) => acc + curr.corrects, 0);
+  const totalTime = masteryValues.reduce((acc, curr) => acc + curr.totalTime, 0);
+
+  const globalAccuracy = totalAttempts > 0 ? Math.round((totalCorrects / totalAttempts) * 100) : 0;
+  const globalAvgSpeed = totalAttempts > 0 ? (totalTime / totalAttempts).toFixed(2) : '0.00';
+
   if (active) {
     return (
       <SessionRunner 
@@ -118,18 +166,6 @@ const FreeTraining: React.FC = () => {
       />
     );
   }
-
-  const availableStrings = ['G', 'D', 'A', 'E'];
-  if (settings.isFiveString) {
-    availableStrings.push('B');
-  }
-
-  const totalPossibleNotes = settings.isFiveString ? 65 : 52;
-  const coveragePercent = Math.round((Object.keys(mastery).length / totalPossibleNotes) * 100);
-  const weakNotesList = Object.entries(mastery)
-    .map(([key, stats]) => ({ key, score: getWeaknessScore(stats as FretboardItemStats) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5);
 
   const sharedTitleStyles = {
     fontWeight: 900,
@@ -178,13 +214,12 @@ const FreeTraining: React.FC = () => {
               </Typography>
             </Box>
             
-            {/* Legend integrated into header level */}
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 1 }}>
                 <Box sx={{ width: 10, height: 10, bgcolor: '#4caf50', borderRadius: 0.2 }} />
                 <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>Mastered</Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 1 }}>
                 <Box sx={{ width: 10, height: 10, bgcolor: '#f44336', borderRadius: 0.2 }} />
                 <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>Weak Spot</Typography>
               </Box>
@@ -214,39 +249,25 @@ const FreeTraining: React.FC = () => {
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflow: 'hidden' }}>
-                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                  {t.topWeakNotes}:
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
+                  Global {t.accuracy}:
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'nowrap', overflowX: 'auto', pb: 0.5 }}>
-                  {weakNotesList.map(({ key }) => {
-                    const s = parseInt(key.split('f')[0].substring(1));
-                    const f = parseInt(key.split('f')[1]);
-                    const info = getFretInfo(s, f);
-                    return (
-                      <Chip 
-                        key={key}
-                        label={`${translateNoteName(info.noteName, settings.noteNaming)} (${translateNoteName(info.stringName, settings.noteNaming)})`}
-                        variant="outlined"
-                        size="small"
-                        sx={{ 
-                          fontWeight: 900,
-                          borderRadius: 0.5,
-                          borderColor: 'error.main',
-                          color: 'error.main',
-                          bgcolor: 'rgba(244, 67, 54, 0.05)',
-                          fontSize: '0.65rem'
-                        }}
-                      />
-                    );
-                  })}
-                  {weakNotesList.length === 0 && (
-                    <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                      No data collected yet.
-                    </Typography>
-                  )}
-                </Box>
+                <Typography variant="h6" fontWeight="900" color="primary.main">
+                  {globalAccuracy}%
+                </Typography>
               </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
+                  Global Avg. Speed:
+                </Typography>
+                <Typography variant="h6" fontWeight="900" color="primary.main">
+                  {globalAvgSpeed}s
+                </Typography>
+              </Box>
+              
+              <Box sx={{ flex: 1 }} />
             </Stack>
           </Box>
         </Paper>
@@ -262,7 +283,9 @@ const FreeTraining: React.FC = () => {
                 borderRadius: 1,
                 border: '1px solid',
                 borderColor: 'divider',
-                bgcolor: 'background.paper'
+                bgcolor: settings.themeMode === 'dark' ? 'rgba(255, 152, 0, 0.04)' : 'rgba(255, 152, 0, 0.08)',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
               <Typography variant="subtitle1" sx={{ ...sharedTitleStyles, mb: 4 }}>
@@ -281,7 +304,7 @@ const FreeTraining: React.FC = () => {
                 fullWidth
                 onClick={handleFixWeakSpots}
                 startIcon={<PsychologyIcon />}
-                sx={sharedButtonStyles}
+                sx={{ ...sharedButtonStyles, mt: 'auto' }}
               >
                 Analyze & Start Drill
               </Button>
@@ -298,7 +321,9 @@ const FreeTraining: React.FC = () => {
                 height: '100%',
                 border: '1px solid',
                 borderColor: 'divider',
-                bgcolor: 'background.paper'
+                bgcolor: 'background.paper',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
               <Typography variant="subtitle1" sx={{ ...sharedTitleStyles, mb: 4 }}>
@@ -367,7 +392,7 @@ const FreeTraining: React.FC = () => {
                 </Grid>
               </Grid>
 
-              <Box sx={{ mt: 4 }}>
+              <Box sx={{ mt: 'auto', pt: 4 }}>
                 <Button 
                   variant="outlined" 
                   fullWidth 

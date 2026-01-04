@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Box, Typography, Paper, Avatar, Link, IconButton, Divider } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -50,7 +49,7 @@ const About: React.FC = () => {
               </Box>
               <Box sx={{ textAlign: 'center' }}>
                 <HandymanIcon color="primary" sx={{ fontSize: 32 }} />
-                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>ENGINEER</Typography>
+                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>CODER</Typography>
               </Box>
             </Box>
           </Grid>
