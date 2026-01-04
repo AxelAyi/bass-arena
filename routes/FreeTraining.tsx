@@ -236,19 +236,6 @@ const FreeTraining: React.FC = () => {
                 <Box sx={{ width: 10, height: 10, bgcolor: '#f44336', borderRadius: 0.2 }} />
                 <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>Weak Spot</Typography>
               </Box>
-              <Tooltip title="Share your progress on X">
-                <IconButton 
-                  size="small" 
-                  onClick={handleShare}
-                  sx={{ 
-                    bgcolor: 'action.hover',
-                    ml: 1,
-                    '&:hover': { bgcolor: 'primary.main', color: 'primary.contrastText' }
-                  }}
-                >
-                  <XIcon />
-                </IconButton>
-              </Tooltip>
             </Box>
           </Box>
 
