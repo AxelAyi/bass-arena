@@ -31,13 +31,16 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Stop Test',
       testHint: 'Start test to verify audio input selection.',
       noteLabel: 'Note',
-      colors: {
-        blue: 'Blue',
-        cyan: 'Cyan',
-        green: 'Green',
-        purple: 'Purple',
-        red: 'Red'
-      }
+      dataManagement: 'Data Management',
+      exportData: 'Export Progress (JSON)',
+      importData: 'Import Progress (JSON)',
+      importSuccess: 'Progress imported successfully!',
+      importError: 'Failed to import. Invalid file format.',
+      resetData: 'Reset All Data',
+      resetSuccess: 'All data has been reset.',
+      resetConfirmTitle: 'Are you absolutely sure?',
+      resetConfirmDesc: 'This will permanently delete your settings, history, and fretboard mastery. This action cannot be undone.',
+      colors: { blue: 'Blue', cyan: 'Cyan', green: 'Green', purple: 'Purple', red: 'Red', grey: 'Dark Grey' }
     },
     program: {
       title: 'Guided Mastery',
@@ -182,7 +185,11 @@ export const translations: Record<AppLanguage, any> = {
       description: 'BassArena was born out of a desire to create a practical, real-time tool for bassists of all levels. I wanted to design a method that makes learning fun and enjoyable, bridging the gap between traditional practice and modern interactive software.',
       contact: 'Get in Touch',
       emailLabel: 'For requests, issues, or just to say hi:',
-      footer: '© 2024 Axel A. - Made for bassists, by a bassist.'
+      footer: '© 2024 Axel A. - Made for bassists, by a bassist.',
+      bassist: 'Bassist',
+      coder: 'Coder',
+      aiExperimentTitle: 'Engineering Note: AI Experimentation',
+      aiExperimentBody: 'This application is an experimentation of quick application building with the help of AI. As an engineer, I believe we need to live with our time and get familiar with modern tooling to push the boundaries of what is possible.'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -225,17 +232,20 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Arrêter le test',
       testHint: 'Lancez le test pour vérifier l\'entrée audio.',
       noteLabel: 'Note',
-      colors: {
-        blue: 'Bleu',
-        cyan: 'Cyan',
-        green: 'Vert',
-        purple: 'Violet',
-        red: 'Rouge'
-      }
+      dataManagement: 'Gestion des Données',
+      exportData: 'Exporter ma Progression (JSON)',
+      importData: 'Importer ma Progression (JSON)',
+      importSuccess: 'Progression importée avec succès !',
+      importError: 'Échec de l\'importation. Format de fichier invalide.',
+      resetData: 'Réinitialiser toutes les Données',
+      resetSuccess: 'Toutes les données ont été réinitialisées.',
+      resetConfirmTitle: 'Êtes-vous absolument sûr ?',
+      resetConfirmDesc: 'Ceci supprimera définitivement vos paramètres, votre historique et votre maîtrise du manche. Cette action est irréversible.',
+      colors: { blue: 'Bleu', cyan: 'Cyan', green: 'Vert', purple: 'Violet', red: 'Rouge', grey: 'Gris Foncé' }
     },
     program: {
       title: 'Maîtrise Guidée',
-      mastered: 'Maîtrisé',
+      mastered: 'Masterisé',
       needAccuracy: 'de précision pour avancer',
       day: 'Tâche',
       best: 'Meilleur',
@@ -376,7 +386,11 @@ export const translations: Record<AppLanguage, any> = {
       description: 'BassArena est né d\'une volonté de créer un outil pratique et temps réel pour les bassistes de tous niveaux. Je voulais rendre l\'apprentissage plus ludique et plaisant, en faisant le pont entre la pratique traditionnelle et les technologies interactive modernes.',
       contact: 'Contact',
       emailLabel: 'Pour toute demande, problème ou simplement dire bonjour :',
-      footer: '© 2024 Axel A. - Fait par un bassiste, pour les bassistes.'
+      footer: '© 2024 Axel A. - Fait par un bassiste, pour les bassistes.',
+      bassist: 'Bassiste',
+      coder: 'Codeur',
+      aiExperimentTitle: 'Note Technique : Expérimentation IA',
+      aiExperimentBody: 'Cette application est une expérimentation sur la construction rapide d\'applications avec l\'aide de l\'IA. En tant qu\'ingénieur, je pense qu\'il faut vivre avec son temps et se familiariser avec les outils modernes pour repousser les limites du possible.'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -419,13 +433,16 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Detener Prueba',
       testHint: 'Inicia la prueba para verificar la entrada.',
       noteLabel: 'Note',
-      colors: {
-        blue: 'Azul',
-        cyan: 'Cian',
-        green: 'Verde',
-        purple: 'Púrpura',
-        red: 'Rojo'
-      }
+      dataManagement: 'Gestión de Datos',
+      exportData: 'Exportar Progreso (JSON)',
+      importData: 'Importar Progreso (JSON)',
+      importSuccess: '¡Progreso importado con éxito!',
+      importError: 'Error al importar. Formato de archivo inválido.',
+      resetData: 'Reiniciar todos los Datos',
+      resetSuccess: 'Todos los datos han sido reiniciados.',
+      resetConfirmTitle: '¿Estás absolutamente seguro?',
+      resetConfirmDesc: 'Esto eliminará permanentemente tus ajustes, historial y maestría del mástil. Esta acción no se puede deshacer.',
+      colors: { blue: 'Azul', cyan: 'Cian', green: 'Verde', purple: 'Púrpura', red: 'Rojo', grey: 'Gris Oscuro' }
     },
     program: {
       title: 'Maestría Guiada',
@@ -478,7 +495,7 @@ export const translations: Record<AppLanguage, any> = {
       active: 'Activo',
       belowGate: 'Bajo el umbral',
       perfect: '¡Perfecto!',
-      silence: 'Silencio',
+      silence: 'Silence',
       timeLeft: 'Tiempo restante',
       cents: 'cents',
       sharp: 'Agudo',
@@ -511,7 +528,7 @@ export const translations: Record<AppLanguage, any> = {
       stringsTitle: 'Nombre de cuerdas',
       halfStepTitle: 'Medios tonos',
       halfStepDesc: 'Casi todas las notas tienen sostenido/bemol excepto:',
-      readingDesc: 'Usamos Pentagrama y Tablatura.',
+      readingDesc: 'Usamos Pentagrama y Tablature.',
       tabTitle: 'Tablature (TAB)',
       tabDesc: 'Las 4 líneas représentent tus cuerdas.',
       staffTitle: 'Pentagrama',
@@ -561,8 +578,8 @@ export const translations: Record<AppLanguage, any> = {
       tick: 'Tick',
       wood: 'Caja de madera',
       timeSignature: 'Compás',
-      enabled: 'Metrónomo ON',
-      disabled: 'Metrónomo OFF',
+      enabled: 'Metronome ON',
+      disabled: 'Metronome OFF',
     },
     about: {
       title: 'Acerca de BassArena',
@@ -571,6 +588,10 @@ export const translations: Record<AppLanguage, any> = {
       contact: 'Contacto',
       emailLabel: 'Para cualquier solicitud, problema o simplemente saludar:',
       footer: '© 2024 Axel A. - Hecho por un bajista, para bajistas.',
+      bassist: 'Bajista',
+      coder: 'Programador',
+      aiExperimentTitle: 'Nota de Ingeniería: Experimentación con IA',
+      aiExperimentBody: 'Esta aplicación es una experimentación sobre la construcción rápida de aplicaciones con la ayuda de la IA. Como ingeniero, creo que debemos vivir con nuestro tiempo y familiarizarnos con las herramientas modernas para ampliar los límites de lo posible.'
     },
     mic: {
       required: 'Acceso al Micrófono Requerido',

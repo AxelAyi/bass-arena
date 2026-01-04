@@ -45,12 +45,14 @@ const Settings: React.FC = () => {
     updateSettings({ language: newLang, noteNaming });
   };
 
+  // The grey value here is used as a selection key; the actual theme value is shifted in App.tsx
   const colorOptions = [
     { name: 'Blue', value: '#2196f3' },
     { name: 'Cyan', value: '#00bcd4' },
     { name: 'Green', value: '#4caf50' },
     { name: 'Purple', value: '#9c27b0' },
     { name: 'Red', value: '#f44336' },
+    { name: 'Grey', value: settings.themeMode === 'light' ? '#424242' : '#bdbdbd' },
   ];
 
   const handleColorSelect = (newColor: string) => {
@@ -254,7 +256,7 @@ const Settings: React.FC = () => {
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                   {colorOptions.map((c) => {
-                    const isSelected = settings.primaryColor === c.value;
+                    const isSelected = settings.primaryColor === c.value || (c.name === 'Grey' && (settings.primaryColor === '#424242' || settings.primaryColor === '#bdbdbd'));
                     return (
                       <ButtonBase
                         key={c.value}

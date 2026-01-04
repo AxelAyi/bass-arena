@@ -1,17 +1,17 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Divider, Stack, Chip, useTheme, useMediaQuery, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Divider, Stack, useTheme, useMediaQuery, MenuItem, Select, FormControl } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import * as ReactRouterDOM from 'react-router-dom';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import LayersIcon from '@mui/icons-material/Layers';
 
-import { getAllPositionsInRanges, FretPosition } from '../data/fretboard';
+import { getAllPositionsInRanges, FretPosition, NOTE_NAMES } from '../data/fretboard';
 import SessionRunner from '../components/SessionRunner';
 import MicPermissionDialog from '../components/MicPermissionDialog';
-import FretboardHeatmap from '../components/FretboardHeatmap';
+import FretboardHeatmap, { ScaleType } from '../components/FretboardHeatmap';
 import { useStore, FretboardItemStats } from '../state/store';
 import { translations } from '../localization/translations';
 import { translateNoteName } from '../audio/noteUtils';
@@ -22,6 +22,7 @@ const FreeTraining: React.FC = () => {
   const { settings, isMicEnabled, mastery } = useStore();
   const theme = useTheme();
   const isMobile = useMediaQuery((theme as any).breakpoints.down('sm'));
+  const isLarge = useMediaQuery((theme as any).breakpoints.up('lg'));
   const t = translations[settings.language].training;
   const location = useLocation();
   
@@ -33,6 +34,10 @@ const FreeTraining: React.FC = () => {
   const [questions, setQuestions] = useState<FretPosition[]>([]);
   const [sessionTitle, setSessionTitle] = useState(t.title);
   const [micDialogOpen, setMicDialogOpen] = useState(false);
+
+  // Overlay State managed here for shared alignment
+  const [scaleType, setScaleType] = useState<ScaleType>('none');
+  const [rootNote, setRootNote] = useState('C');
 
   useEffect(() => {
     setActive(false);
@@ -200,7 +205,7 @@ const FreeTraining: React.FC = () => {
             p: { xs: 2, md: 3 }
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{ width: 4, height: 24, bgcolor: 'primary.main', borderRadius: 0.5 }} />
               <Typography variant="subtitle1" fontWeight="900" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -210,58 +215,114 @@ const FreeTraining: React.FC = () => {
             
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 1 }}>
-                <Box sx={{ width: 10, height: 10, bgcolor: '#4caf50', borderRadius: 0.2 }} />
+                <Box sx={{ width: 10, height: 10, bgcolor: '#388e3c', borderRadius: 0.2 }} />
                 <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>{t.masteredLabel}</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 1 }}>
-                <Box sx={{ width: 10, height: 10, bgcolor: '#f44336', borderRadius: 0.2 }} />
+                <Box sx={{ width: 10, height: 10, bgcolor: '#d32f2f', borderRadius: 0.2 }} />
                 <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>{t.weakSpotLabel}</Typography>
               </Box>
             </Box>
           </Box>
 
-          <FretboardHeatmap />
+          <FretboardHeatmap scaleType={scaleType} rootNote={rootNote} />
 
           <Box sx={{ 
-            mt: 2,
+            mt: 3,
             pt: 2,
             borderTop: '1px solid', 
             borderColor: 'divider'
           }}>
             <Stack 
-              direction={{ xs: 'column', sm: 'row' }} 
-              spacing={{ xs: 2, sm: 4 }} 
-              alignItems="center" 
-              divider={<Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />}
+              direction={{ xs: 'column', lg: 'row' }} 
+              spacing={{ xs: 2, lg: 4 }} 
+              alignItems={{ xs: 'flex-start', lg: 'center' }} 
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
-                  {t.neckCoverage}:
-                </Typography>
-                <Typography variant="h6" fontWeight="900" color="primary.main">
-                  {coveragePercent}%
-                </Typography>
-              </Box>
+              {/* Pattern Overlays - Integrated and Compact */}
+              <Stack direction="row" spacing={3} alignItems="center" sx={{ flexShrink: 0 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <LayersIcon fontSize="small" sx={{ color: 'text.secondary', opacity: 0.7 }} />
+                    <Typography variant="caption" fontWeight="900" sx={{ textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                        Overlays:
+                    </Typography>
+                </Stack>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
-                  {t.accuracy}:
-                </Typography>
-                <Typography variant="h6" fontWeight="900" color="primary.main">
-                  {globalAccuracy}%
-                </Typography>
-              </Box>
+                <Stack direction="row" spacing={2} alignItems="center">
+                    <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography variant="caption" fontWeight="800" sx={{ color: 'text.secondary', opacity: 0.8, whiteSpace: 'nowrap' }}>Scale</Typography>
+                        <FormControl size="small" variant="standard">
+                            <Select 
+                                value={scaleType} 
+                                onChange={(e) => setScaleType(e.target.value as ScaleType)}
+                                sx={{ fontSize: '0.75rem', fontWeight: 800, minWidth: 100 }}
+                                disableUnderline
+                            >
+                                <MenuItem value="none" sx={{ fontSize: '0.75rem' }}>None</MenuItem>
+                                <MenuItem value="major_pent" sx={{ fontSize: '0.75rem' }}>Major Pentatonic</MenuItem>
+                                <MenuItem value="minor_pent" sx={{ fontSize: '0.75rem' }}>Minor Pentatonic</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Stack>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
-                  {t.avgSpeed}:
-                </Typography>
-                <Typography variant="h6" fontWeight="900" color="primary.main">
-                  {globalAvgSpeed}s
-                </Typography>
-              </Box>
-              
-              <Box sx={{ flex: 1 }} />
+                    {scaleType !== 'none' && (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography variant="caption" fontWeight="800" sx={{ color: 'text.secondary', opacity: 0.8, whiteSpace: 'nowrap' }}>Root</Typography>
+                            <FormControl size="small" variant="standard">
+                                <Select 
+                                    value={rootNote} 
+                                    onChange={(e) => setRootNote(e.target.value)}
+                                    sx={{ fontSize: '0.75rem', fontWeight: 800, minWidth: 40 }}
+                                    disableUnderline
+                                >
+                                    {NOTE_NAMES.map(n => (
+                                        <MenuItem key={n} value={n} sx={{ fontSize: '0.75rem' }}>
+                                            {translateNoteName(n, settings.noteNaming)}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Stack>
+                    )}
+                </Stack>
+              </Stack>
+
+              {/* Space filler to push stats to the right on large displays */}
+              <Box sx={{ display: { xs: 'none', lg: 'block' }, flexGrow: 1 }} />
+
+              {/* Statistics - Compact Row */}
+              <Stack 
+                direction="row" 
+                spacing={{ xs: 3, sm: 4 }} 
+                alignItems="center" 
+                sx={{ width: { xs: '100%', lg: 'auto' }, justifyContent: { xs: 'space-between', lg: 'flex-end' } }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', opacity: 0.6 }}>
+                      {t.neckCoverage}:
+                    </Typography>
+                    <Typography variant="subtitle2" fontWeight="900" color="primary.main">
+                      {coveragePercent}%
+                    </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', opacity: 0.6 }}>
+                      {t.accuracy}:
+                    </Typography>
+                    <Typography variant="subtitle2" fontWeight="900" color="primary.main">
+                      {globalAccuracy}%
+                    </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', opacity: 0.6 }}>
+                      {t.avgSpeed}:
+                    </Typography>
+                    <Typography variant="subtitle2" fontWeight="900" color="primary.main">
+                      {globalAvgSpeed}s
+                    </Typography>
+                </Box>
+              </Stack>
             </Stack>
           </Box>
         </Paper>
@@ -278,29 +339,48 @@ const FreeTraining: React.FC = () => {
                 borderColor: 'divider',
                 bgcolor: settings.themeMode === 'dark' ? 'rgba(255, 152, 0, 0.04)' : 'rgba(255, 152, 0, 0.08)',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                position: 'relative',
+                overflow: 'hidden'
               }}
             >
-              <Typography variant="subtitle1" sx={{ ...sharedTitleStyles, mb: 4 }}>
-                <PsychologyIcon color="primary" />
-                {t.fixWeakSpots}
-              </Typography>
-              
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 4, lineHeight: 1.7, minHeight: 80 }}>
-                {t.weakSpotsDesc}
-              </Typography>
-              
-              <Button 
-                variant="outlined" 
-                color="primary" 
-                size="large"
-                fullWidth
-                onClick={handleFixWeakSpots}
-                startIcon={<PsychologyIcon />}
-                sx={{ ...sharedButtonStyles, mt: 'auto' }}
-              >
-                {t.analyzeAndStart}
-              </Button>
+              {/* Background Decorative Icon */}
+              <PsychologyIcon 
+                sx={{ 
+                  position: 'absolute', 
+                  bottom: -40, 
+                  right: -40, 
+                  fontSize: 280, 
+                  opacity: settings.themeMode === 'dark' ? 0.04 : 0.07, 
+                  transform: 'rotate(-15deg)',
+                  pointerEvents: 'none',
+                  color: 'primary.main',
+                  zIndex: 0
+                }} 
+              />
+
+              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <Typography variant="subtitle1" sx={{ ...sharedTitleStyles, mb: 4 }}>
+                  <PsychologyIcon color="primary" />
+                  {t.fixWeakSpots}
+                </Typography>
+                
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 4, lineHeight: 1.7, minHeight: 80 }}>
+                  {t.weakSpotsDesc}
+                </Typography>
+                
+                <Button 
+                  variant="outlined" 
+                  color="primary" 
+                  size="large"
+                  fullWidth
+                  onClick={handleFixWeakSpots}
+                  startIcon={<PsychologyIcon />}
+                  sx={{ ...sharedButtonStyles, mt: 'auto' }}
+                >
+                  {t.analyzeAndStart}
+                </Button>
+              </Box>
             </Paper>
           </Grid>
 

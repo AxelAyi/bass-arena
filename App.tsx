@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 // Fix: Use module import and cast to any to resolve missing named exports
 import * as ReactRouterDOM from 'react-router-dom';
@@ -79,7 +78,15 @@ const App: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(anchorEl);
 
-  const theme = useMemo(() => getAppTheme(settings.themeMode, settings.primaryColor), [settings.themeMode, settings.primaryColor]);
+  // Automatically adjust grey values for contrast if "Grey" is selected
+  const effectivePrimaryColor = useMemo(() => {
+    if (settings.primaryColor === '#bdbdbd' || settings.primaryColor === '#424242' || settings.primaryColor === '#616161') {
+      return settings.themeMode === 'light' ? '#424242' : '#bdbdbd';
+    }
+    return settings.primaryColor;
+  }, [settings.primaryColor, settings.themeMode]);
+
+  const theme = useMemo(() => getAppTheme(settings.themeMode, effectivePrimaryColor), [settings.themeMode, effectivePrimaryColor]);
 
   const toggleTheme = () => {
     updateSettings({ themeMode: settings.themeMode === 'light' ? 'dark' : 'light' });

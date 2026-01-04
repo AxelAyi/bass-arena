@@ -23,6 +23,7 @@ export interface UserSettings {
   minUnlockAccuracy: number;
   isFiveString: boolean;
   allowMultipleAttempts: boolean;
+  unlockAllExercises: boolean;
   themeMode: 'light' | 'dark';
   noteNaming: 'english' | 'latin';
   language: AppLanguage;
@@ -44,6 +45,37 @@ export interface SessionResult {
   programId: string;
 }
 
+const getInitialLanguage = (): AppLanguage => {
+  if (typeof navigator === 'undefined') return 'en';
+  const browserLang = navigator.language.split('-')[0] as AppLanguage;
+  const supported: AppLanguage[] = ['en', 'fr', 'es'];
+  return supported.includes(browserLang) ? browserLang : 'en';
+};
+
+const DEFAULT_SETTINGS: UserSettings = {
+  rmsThreshold: 0.01,
+  pitchTolerance: 30,
+  stabilityMs: 30,
+  timeLimit: 5,
+  strictOctave: false,
+  showFretNumber: true,
+  lockString: true,
+  selectedMicId: '',
+  minUnlockAccuracy: 80,
+  isFiveString: false,
+  allowMultipleAttempts: false,
+  unlockAllExercises: false,
+  themeMode: 'dark',
+  noteNaming: 'english',
+  language: getInitialLanguage(),
+  primaryColor: '#2196f3',
+  metronomeEnabled: false,
+  metronomeBpm: 100,
+  metronomeVolume: 0.5,
+  metronomeSound: 'tick',
+  metronomeBeatsPerMeasure: 4,
+};
+
 interface AppState {
   settings: UserSettings;
   history: SessionResult[];
@@ -55,33 +87,14 @@ interface AppState {
   setActiveProgramId: (id: string) => void;
   isMicEnabled: boolean;
   setMicEnabled: (enabled: boolean) => void;
+  importState: (newState: any) => void;
+  resetStore: () => void;
 }
 
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
-      settings: {
-        rmsThreshold: 0.01,
-        pitchTolerance: 30,
-        stabilityMs: 30,
-        timeLimit: 5,
-        strictOctave: false,
-        showFretNumber: true,
-        lockString: true,
-        selectedMicId: '',
-        minUnlockAccuracy: 80,
-        isFiveString: false,
-        allowMultipleAttempts: false,
-        themeMode: 'dark',
-        noteNaming: 'english',
-        language: 'en',
-        primaryColor: '#2196f3',
-        metronomeEnabled: false,
-        metronomeBpm: 100,
-        metronomeVolume: 0.5,
-        metronomeSound: 'tick',
-        metronomeBeatsPerMeasure: 4,
-      },
+      settings: DEFAULT_SETTINGS,
       history: [],
       mastery: {},
       activeProgramId: 'fretboard',
@@ -109,6 +122,19 @@ export const useStore = create<AppState>()(
       setActiveProgramId: (id) => set({ activeProgramId: id }),
       isMicEnabled: false,
       setMicEnabled: (enabled) => set({ isMicEnabled: enabled }),
+      importState: (newState) => set(() => ({
+        settings: { ...DEFAULT_SETTINGS, ...newState.settings },
+        history: newState.history || [],
+        mastery: newState.mastery || {},
+        activeProgramId: newState.activeProgramId || 'fretboard',
+      })),
+      resetStore: () => set(() => ({
+        settings: DEFAULT_SETTINGS,
+        history: [],
+        mastery: {},
+        activeProgramId: 'fretboard',
+        isMicEnabled: false,
+      })),
     }),
     {
       name: 'bass-arena-storage-v2',

@@ -40,7 +40,7 @@ export const translations: Record<AppLanguage, any> = {
       resetSuccess: 'All data has been reset.',
       resetConfirmTitle: 'Are you absolutely sure?',
       resetConfirmDesc: 'This will permanently delete your settings, history, and fretboard mastery. This action cannot be undone.',
-      colors: { blue: 'Blue', cyan: 'Cyan', green: 'Green', purple: 'Purple', red: 'Red' }
+      colors: { blue: 'Blue', cyan: 'Cyan', green: 'Green', purple: 'Purple', red: 'Red', grey: 'Grey' }
     },
     program: {
       title: 'Guided Mastery',
@@ -138,8 +138,8 @@ export const translations: Record<AppLanguage, any> = {
       ruleOf5Desc: 'Standard tuning is "perfect fourths". This means the 5th fret on any string is the same note as the open string above it.',
       constructionTitle: 'Building Full Scales',
       constructionDesc: 'Scales are defined by "Steps": a Half-Step (H) is 1 fret, and a Whole-Step (W) is 2 frets.',
-      majorPattern: 'Major Scale (Ionian):',
-      minorPattern: 'Natural Minor (Aeolian):',
+      majorPattern: 'Major Scale (Ionian): W - W - H - W - W - W - H',
+      minorPattern: 'Natural Minor (Aeolian): W - H - W - W - H - W - W',
       exCMajorFull: 'Example: C Major Scale',
       exCMinorFull: 'Example: C Minor Scale',
       pentatonicTitle: 'The 5-Note "Penta" Logic',
@@ -241,7 +241,7 @@ export const translations: Record<AppLanguage, any> = {
       resetSuccess: 'Toutes les données ont été réinitialisées.',
       resetConfirmTitle: 'Êtes-vous absolument sûr ?',
       resetConfirmDesc: 'Ceci supprimera définitivement vos paramètres, votre historique et votre maîtrise du manche. Cette action est irréversible.',
-      colors: { blue: 'Bleu', cyan: 'Cyan', green: 'Vert', purple: 'Violet', red: 'Rouge' }
+      colors: { blue: 'Bleu', cyan: 'Cyan', green: 'Vert', purple: 'Violet', red: 'Rouge', grey: 'Gris' }
     },
     program: {
       title: 'Maîtrise Guidée',
@@ -339,8 +339,8 @@ export const translations: Record<AppLanguage, any> = {
       ruleOf5Desc: 'La 5ème frette est la même note que la corde à vide supérieure.',
       constructionTitle: 'Construction des Gammes',
       constructionDesc: 'On utilise des "Tons" (T = 2 frettes) et des "Demi-tons" (D = 1 frette).',
-      majorPattern: 'Gamme Majeure (Ionien) :',
-      minorPattern: 'Gamme Mineure (Eolien) :',
+      majorPattern: 'Gamme Majeure (Ionien) : T - T - D - T - T - T - D',
+      minorPattern: 'Gamme Mineure (Eolien) : T - D - T - T - D - T - T',
       exCMajorFull: 'Example: Gamme de Do Majeur',
       exCMinorFull: 'Example: Gamme de Do Mineur',
       pentatonicTitle: 'La Logique des 5 Notes',
@@ -442,7 +442,7 @@ export const translations: Record<AppLanguage, any> = {
       resetSuccess: 'Todos los datos han sido reiniciados.',
       resetConfirmTitle: '¿Estás absolutamente seguro?',
       resetConfirmDesc: 'Esto eliminará permanentemente tus ajustes, historial y maestría del mástil. Esta acción no se puede deshacer.',
-      colors: { blue: 'Azul', cyan: 'Cian', green: 'Verde', purple: 'Púrpura', red: 'Rojo' }
+      colors: { blue: 'Azul', cyan: 'Cian', green: 'Verde', purple: 'Púrpura', red: 'Rojo', grey: 'Gris' }
     },
     program: {
       title: 'Maestría Guiada',
@@ -540,8 +540,8 @@ export const translations: Record<AppLanguage, any> = {
       ruleOf5Desc: 'El 5º traste es la misma note que la cuerda superior.',
       constructionTitle: 'Construcción de Escalas',
       constructionDesc: 'Se utilizan tonos y semitonos para construir escalas.',
-      majorPattern: 'Escala Mayor:',
-      minorPattern: 'Escala Menor:',
+      majorPattern: 'Escala Mayor: T - T - S - T - T - T - S',
+      minorPattern: 'Escala Menor: T - S - T - T - S - T - T',
       exCMajorFull: 'Example: Escala de Do Mayor',
       exCMinorFull: 'Example: Escala de Do Menor',
       pentatonicTitle: 'La Lógica de las 5 Notas',

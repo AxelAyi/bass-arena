@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Divider, Stack, Chip, useTheme, useMediaQuery, IconButton, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -278,29 +277,48 @@ const FreeTraining: React.FC = () => {
                 borderColor: 'divider',
                 bgcolor: settings.themeMode === 'dark' ? 'rgba(255, 152, 0, 0.04)' : 'rgba(255, 152, 0, 0.08)',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                position: 'relative',
+                overflow: 'hidden'
               }}
             >
-              <Typography variant="subtitle1" sx={{ ...sharedTitleStyles, mb: 4 }}>
-                <PsychologyIcon color="primary" />
-                {t.fixWeakSpots}
-              </Typography>
-              
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 4, lineHeight: 1.7, minHeight: 80 }}>
-                {t.weakSpotsDesc}
-              </Typography>
-              
-              <Button 
-                variant="outlined" 
-                color="primary" 
-                size="large"
-                fullWidth
-                onClick={handleFixWeakSpots}
-                startIcon={<PsychologyIcon />}
-                sx={{ ...sharedButtonStyles, mt: 'auto' }}
-              >
-                {t.analyzeAndStart}
-              </Button>
+              {/* Background Decorative Icon */}
+              <PsychologyIcon 
+                sx={{ 
+                  position: 'absolute', 
+                  bottom: -40, 
+                  right: -40, 
+                  fontSize: 280, 
+                  opacity: settings.themeMode === 'dark' ? 0.04 : 0.07, 
+                  transform: 'rotate(-15deg)',
+                  pointerEvents: 'none',
+                  color: 'primary.main',
+                  zIndex: 0
+                }} 
+              />
+
+              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <Typography variant="subtitle1" sx={{ ...sharedTitleStyles, mb: 4 }}>
+                  <PsychologyIcon color="primary" />
+                  {t.fixWeakSpots}
+                </Typography>
+                
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 4, lineHeight: 1.7, minHeight: 80 }}>
+                  {t.weakSpotsDesc}
+                </Typography>
+                
+                <Button 
+                  variant="outlined" 
+                  color="primary" 
+                  size="large"
+                  fullWidth
+                  onClick={handleFixWeakSpots}
+                  startIcon={<PsychologyIcon />}
+                  sx={{ ...sharedButtonStyles, mt: 'auto' }}
+                >
+                  {t.analyzeAndStart}
+                </Button>
+              </Box>
             </Paper>
           </Grid>
 
