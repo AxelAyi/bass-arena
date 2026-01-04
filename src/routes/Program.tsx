@@ -1,7 +1,9 @@
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import { useLocation } from 'react-router-dom';
+// Fix: Use module import to bypass named export type check
+import * as ReactRouterDOM from 'react-router-dom';
 import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import StarIcon from '@mui/icons-material/Star';
@@ -12,6 +14,9 @@ import { translations } from '../localization/translations';
 import SessionRunner from '../components/SessionRunner';
 import { getAllPositionsInRanges, FretPosition } from '../data/fretboard';
 import { translateTextWithNotes } from '../audio/noteUtils';
+
+// Fix: Extract useLocation from the module via casting
+const { useLocation } = ReactRouterDOM as any;
 
 interface ActiveTaskInfo {
   task: DayTask;

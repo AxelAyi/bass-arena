@@ -39,11 +39,11 @@ const Settings: React.FC = () => {
   };
 
   const colorOptions = [
-    { name: 'Blue', value: '#2196f3' },
-    { name: 'Cyan', value: '#00bcd4' },
-    { name: 'Green', value: '#4caf50' },
-    { name: 'Purple', value: '#9c27b0' },
-    { name: 'Red', value: '#f44336' },
+    { name: t.colors.blue, value: '#2196f3' },
+    { name: t.colors.cyan, value: '#00bcd4' },
+    { name: t.colors.green, value: '#4caf50' },
+    { name: t.colors.purple, value: '#9c27b0' },
+    { name: t.colors.red, value: '#f44336' },
   ];
 
   const handleColorSelect = (newColor: string) => {
@@ -85,7 +85,7 @@ const Settings: React.FC = () => {
   const shouldDisplayNote = testStats && testStats.pitch && testStats.rms >= settings.rmsThreshold;
 
   return (
-    <Box sx={{ maxWidth: 900, mx: 'auto', mb: 4 }}>
+    <Box sx={{ pb: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
         <SettingsIcon color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
         <Typography variant="h5" fontWeight="900" sx={{ letterSpacing: -1 }}>{t.title}</Typography>
@@ -94,7 +94,7 @@ const Settings: React.FC = () => {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Paper sx={{ p: 3, borderRadius: 1 }}>
+            <Paper sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.audioInput}</Typography>
               <Divider sx={{ mb: 2 }} />
               
@@ -102,7 +102,7 @@ const Settings: React.FC = () => {
                 <MicSelector />
               </Box>
 
-              <Box sx={{ mb: 3, p: 2, bgcolor: 'rgba(0,0,0,0.2)', borderRadius: 1, border: '1px solid rgba(255,255,255,0.05)' }}>
+              <Box sx={{ mb: 3, p: 2, bgcolor: 'rgba(0,0,0,0.2)', borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                   <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
                     {t.liveMonitor}
@@ -168,7 +168,7 @@ const Settings: React.FC = () => {
               </Box>
             </Paper>
 
-            <Paper sx={{ p: 3, borderRadius: 1 }}>
+            <Paper sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.instrument}</Typography>
               <Divider sx={{ mb: 2 }} />
               
@@ -183,7 +183,7 @@ const Settings: React.FC = () => {
 
         <Grid size={{ xs: 12, md: 6 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Paper sx={{ p: 3, borderRadius: 1 }}>
+            <Paper sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.localization}</Typography>
               <Divider sx={{ mb: 2 }} />
 
@@ -236,7 +236,7 @@ const Settings: React.FC = () => {
               </Box>
             </Paper>
 
-            <Paper sx={{ p: 3, borderRadius: 1 }}>
+            <Paper sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.trainingRules}</Typography>
               <Divider sx={{ mb: 2 }} />
 
@@ -255,6 +255,7 @@ const Settings: React.FC = () => {
               </Box>
               
               <FormGroup>
+                <FormControlLabel control={<Switch checked={settings.unlockAllExercises} onChange={handleSwitch('unlockAllExercises')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.unlockAllExercises}</Typography>} />
                 <FormControlLabel control={<Switch checked={settings.strictOctave} onChange={handleSwitch('strictOctave')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.strictOctave}</Typography>} />
                 <FormControlLabel control={<Switch checked={settings.showFretNumber} onChange={handleSwitch('showFretNumber')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.showFret}</Typography>} />
                 <FormControlLabel control={<Switch checked={settings.lockString} onChange={handleSwitch('lockString')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.validateString}</Typography>} />

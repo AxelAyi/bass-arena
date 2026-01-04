@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+// Fix: Use module import and cast to any to resolve missing named exports
+import * as ReactRouterDOM from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box, AppBar, Toolbar, Typography, Button, Container, BottomNavigation, BottomNavigationAction, Paper, IconButton, Menu, MenuItem, useMediaQuery } from '@mui/material';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
@@ -21,6 +22,9 @@ import Settings from './routes/Settings';
 import Theory from './routes/Theory';
 import About from './routes/About';
 import Tuner from './components/Tuner';
+
+// Fix: Extract components/hooks from the casted module object
+const { HashRouter: Router, Routes, Route, Link, useLocation } = ReactRouterDOM as any;
 
 const Navigation = () => {
   const { settings } = useStore();

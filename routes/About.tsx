@@ -46,11 +46,11 @@ const About: React.FC = () => {
             <Box sx={{ display: 'flex', gap: 3, mt: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <MusicNoteIcon color="primary" sx={{ fontSize: 32 }} />
-                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>BASSIST</Typography>
+                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>{t.bassist}</Typography>
               </Box>
               <Box sx={{ textAlign: 'center' }}>
                 <HandymanIcon color="primary" sx={{ fontSize: 32 }} />
-                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>ENGINEER</Typography>
+                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>{t.coder}</Typography>
               </Box>
             </Box>
           </Grid>

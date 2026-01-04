@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Box, Button, Alert, CircularProgress } from '@mui/material';
+import { FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Box, Button, Alert, CircularProgress, Typography } from '@mui/material';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
 
@@ -115,9 +115,14 @@ const MicSelector: React.FC = () => {
               {device.label || `Microphone (${device.deviceId.slice(0, 5)}...)`}
             </MenuItem>
           ))}
-          {devices.length === 0 && <MenuItem value="">No microphones found</MenuItem>}
+          {devices.length === 0 && <MenuItem value="">{t.noMics}</MenuItem>}
         </Select>
       </FormControl>
+      {devices.length > 0 && devices[0].label === "" && (
+        <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
+          {t.refreshHint}
+        </Typography>
+      )}
     </Box>
   );
 };

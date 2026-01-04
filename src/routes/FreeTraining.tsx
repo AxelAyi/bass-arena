@@ -1,7 +1,8 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Divider, Stack, Chip, useTheme, useMediaQuery, IconButton, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import { useLocation } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
@@ -15,10 +16,12 @@ import { useStore, FretboardItemStats } from '../state/store';
 import { translations } from '../localization/translations';
 import { translateNoteName } from '../audio/noteUtils';
 
+const { useLocation } = ReactRouterDOM as any;
+
 const FreeTraining: React.FC = () => {
   const { settings, isMicEnabled, mastery } = useStore();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery((theme as any).breakpoints.down('sm'));
   const t = translations[settings.language].training;
   const location = useLocation();
   
@@ -39,10 +42,6 @@ const FreeTraining: React.FC = () => {
     setSelectedStrings(prev => ({ ...prev, [name]: !prev[name as keyof typeof prev] }));
   };
 
-  /**
-   * Defines a Mastered state: 
-   * High accuracy (>80%) and at least 3 attempts to prove consistency.
-   */
   const isMastered = (stats: FretboardItemStats | undefined): boolean => {
     if (!stats || stats.attempts < 3) return false;
     return (stats.corrects / stats.attempts) > 0.8;
@@ -57,9 +56,8 @@ const FreeTraining: React.FC = () => {
     const accScore = 1 - accuracy;
     const speedScore = Math.min(1, avgTime / settings.timeLimit);
     
-    // Recency boost ensures we don't completely ignore non-mastered notes for long periods.
     const hoursSinceLast = (Date.now() - stats.lastAttempt) / (1000 * 60 * 60);
-    const recencyBoost = Math.min(0.2, hoursSinceLast / 168); // Max boost after 1 week
+    const recencyBoost = Math.min(0.2, hoursSinceLast / 168); 
     
     return (accScore * 0.6) + (speedScore * 0.3) + (recencyBoost * 0.1);
   };
@@ -107,19 +105,18 @@ const FreeTraining: React.FC = () => {
                 mastered: isMastered(stats)
             };
         })
-        .filter(item => !item.mastered) // CRITICAL: Only target non-mastered notes
+        .filter(item => !item.mastered) 
         .sort((a, b) => b.score - a.score);
 
     const weakQs = scoredPool.slice(0, 10).map(item => item.pos);
     
     if (weakQs.length === 0) {
-        // Fallback if user mastered everything: just do a general refresh of the least practiced
         const maintenanceQs = fullPool
             .map(pos => ({ pos, stats: mastery[`s${pos.string}f${pos.fret}`] }))
             .sort((a, b) => (a.stats?.lastAttempt || 0) - (b.stats?.lastAttempt || 0))
             .slice(0, 10)
             .map(i => i.pos);
-        executeSession(maintenanceQs, "Maintenance Drill");
+        executeSession(maintenanceQs, t.maintenanceDrill);
         return;
     }
 
@@ -146,7 +143,6 @@ const FreeTraining: React.FC = () => {
   const totalPossibleNotes = settings.isFiveString ? 65 : 52;
   const coveragePercent = Math.round((Object.keys(mastery).length / totalPossibleNotes) * 100);
   
-  // Global Performance Stats
   const masteryValues = Object.values(mastery) as FretboardItemStats[];
   const totalAttempts = masteryValues.reduce((acc, curr) => acc + curr.attempts, 0);
   const totalCorrects = masteryValues.reduce((acc, curr) => acc + curr.corrects, 0);
@@ -187,14 +183,12 @@ const FreeTraining: React.FC = () => {
 
   return (
     <Box sx={{ pb: 6 }}>
-      {/* Page Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
         <FitnessCenterIcon color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
         <Typography variant="h5" fontWeight="900" sx={{ letterSpacing: -1 }}>{t.title}</Typography>
       </Box>
 
       <Stack spacing={4}>
-        {/* Heatmap Section */}
         <Paper 
           elevation={0} 
           sx={{ 
@@ -217,11 +211,11 @@ const FreeTraining: React.FC = () => {
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 1 }}>
                 <Box sx={{ width: 10, height: 10, bgcolor: '#4caf50', borderRadius: 0.2 }} />
-                <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>Mastered</Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>{t.masteredLabel}</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 1 }}>
                 <Box sx={{ width: 10, height: 10, bgcolor: '#f44336', borderRadius: 0.2 }} />
-                <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>Weak Spot</Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>{t.weakSpotLabel}</Typography>
               </Box>
             </Box>
           </Box>
@@ -251,7 +245,7 @@ const FreeTraining: React.FC = () => {
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
-                  Global {t.accuracy}:
+                  {t.accuracy}:
                 </Typography>
                 <Typography variant="h6" fontWeight="900" color="primary.main">
                   {globalAccuracy}%
@@ -260,7 +254,7 @@ const FreeTraining: React.FC = () => {
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
-                  Global Avg. Speed:
+                  {t.avgSpeed}:
                 </Typography>
                 <Typography variant="h6" fontWeight="900" color="primary.main">
                   {globalAvgSpeed}s
@@ -273,7 +267,6 @@ const FreeTraining: React.FC = () => {
         </Paper>
 
         <Grid container spacing={3}>
-          {/* Fix Weak Spots Block */}
           <Grid size={{ xs: 12, lg: 5 }}>
             <Paper 
               elevation={0}
@@ -306,12 +299,11 @@ const FreeTraining: React.FC = () => {
                 startIcon={<PsychologyIcon />}
                 sx={{ ...sharedButtonStyles, mt: 'auto' }}
               >
-                Analyze & Start Drill
+                {t.analyzeAndStart}
               </Button>
             </Paper>
           </Grid>
 
-          {/* Custom Session Block */}
           <Grid size={{ xs: 12, lg: 7 }}>
             <Paper 
               elevation={0}
@@ -328,7 +320,7 @@ const FreeTraining: React.FC = () => {
             >
               <Typography variant="subtitle1" sx={{ ...sharedTitleStyles, mb: 4 }}>
                 <DashboardCustomizeIcon color="primary" />
-                Custom Session Setup
+                {t.customSessionSetup}
               </Typography>
 
               <Grid container spacing={4}>
@@ -402,7 +394,7 @@ const FreeTraining: React.FC = () => {
                   disabled={availableStrings.every(s => !selectedStrings[s as keyof typeof selectedStrings])}
                   sx={sharedButtonStyles}
                 >
-                  Deploy Custom Drill
+                  {t.deployCustom}
                 </Button>
               </Box>
             </Paper>

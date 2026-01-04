@@ -25,7 +25,8 @@ import SheetMusic from '../components/SheetMusic';
 const Theory: React.FC = () => {
   const { settings } = useStore();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  // Fix: Cast theme to any to access breakpoints if standard Theme type is restricted
+  const isMobile = useMediaQuery((theme as any).breakpoints.down('md'));
   const t = translations[settings.language].theory;
   
   const [explorerRoot, setExplorerRoot] = useState('C');

@@ -1,35 +1,70 @@
-
-import React, { useEffect, useState } from 'react';
-import { FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Box, Typography, Button, Alert } from '@mui/material';
+import React, { useEffect, useState, useCallback } from 'react';
+import { FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Box, Button, Alert, CircularProgress, Typography } from '@mui/material';
 import { useStore } from '../state/store';
+import { translations } from '../localization/translations';
 
 const MicSelector: React.FC = () => {
   const { settings, updateSettings, isMicEnabled, setMicEnabled } = useStore();
+  const t = translations[settings.language].mic;
+  const st = translations[settings.language].settings;
+  
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const getDevices = async () => {
+  const getDevices = useCallback(async () => {
     try {
       const allDevices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = allDevices.filter(d => d.kind === 'audioinput');
       setDevices(audioInputs);
       
-      // If we have labels but permission wasn't fully checked, this confirms we are good
-      if (audioInputs.length > 0 && audioInputs[0].label === "") {
-        console.warn("Empty device labels. User might need to grant permission first.");
+      if (audioInputs.length > 0) {
+        const currentId = settings.selectedMicId;
+        const exists = audioInputs.some(d => d.deviceId === currentId);
+        
+        if (!currentId || !exists) {
+          const defaultDevice = audioInputs.find(d => d.deviceId === 'default') || audioInputs[0];
+          if (defaultDevice) {
+            updateSettings({ selectedMicId: defaultDevice.deviceId });
+          }
+        }
       }
     } catch (err) {
-      setError("Could not access microphone list.");
+      console.error("Error enumerating devices:", err);
+      setError(t.failed);
     }
-  };
+  }, [settings.selectedMicId, updateSettings, t.failed]);
+
+  const checkPermissionAndLoad = useCallback(async () => {
+    setLoading(true);
+    try {
+      const initialDevices = await navigator.mediaDevices.enumerateDevices();
+      const hasLabels = initialDevices.some(d => d.kind === 'audioinput' && d.label !== '');
+      
+      if (hasLabels) {
+        setMicEnabled(true);
+        await getDevices();
+      }
+    } catch (e) {
+      console.warn("Permission check failed", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [getDevices, setMicEnabled]);
 
   const handleEnableMic = async () => {
+    setError(null);
+    setLoading(true);
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
       setMicEnabled(true);
-      getDevices();
-    } catch (err) {
-      setError("Microphone permission denied.");
+      await getDevices();
+    } catch (err: any) {
+      setError(t.failed);
+      setMicEnabled(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,20 +73,26 @@ const MicSelector: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isMicEnabled) {
-      getDevices();
-    }
-  }, [isMicEnabled]);
+    checkPermissionAndLoad();
+    navigator.mediaDevices.addEventListener('devicechange', getDevices);
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', getDevices);
+    };
+  }, [checkPermissionAndLoad, getDevices]);
+
+  const currentSelectValue = devices.some(d => d.deviceId === settings.selectedMicId) 
+    ? settings.selectedMicId 
+    : (devices.length > 0 ? '' : '');
+
+  if (loading) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}><CircularProgress size={20} /></Box>;
+  }
 
   if (!isMicEnabled) {
     return (
-      <Box sx={{ textAlign: 'center', p: 4, bgcolor: 'background.paper', borderRadius: 2 }}>
-        <Typography variant="h6" gutterBottom>Microphone Access Required</Typography>
-        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-          We need access to your microphone to listen to your bass notes.
-        </Typography>
-        <Button variant="contained" onClick={handleEnableMic}>
-          Enable Microphone
+      <Box sx={{ py: 1 }}>
+        <Button variant="outlined" onClick={handleEnableMic} size="small" fullWidth>
+          {t.enable}
         </Button>
       </Box>
     );
@@ -59,25 +100,26 @@ const MicSelector: React.FC = () => {
 
   return (
     <Box sx={{ minWidth: 200 }}>
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      <FormControl fullWidth>
-        <InputLabel>Audio Input Device</InputLabel>
+      {error && <Alert severity="error" sx={{ mb: 1, py: 0 }}>{error}</Alert>}
+      <FormControl fullWidth size="small">
+        <InputLabel id="mic-selector-label">{st.audioInput}</InputLabel>
         <Select
-          value={settings.selectedMicId}
-          label="Audio Input Device"
+          labelId="mic-selector-label"
+          value={currentSelectValue}
+          label={st.audioInput}
           onChange={handleChange}
         >
           {devices.map((device) => (
             <MenuItem key={device.deviceId} value={device.deviceId}>
-              {device.label || `Microphone ${device.deviceId.slice(0, 5)}...`}
+              {device.label || `Microphone (${device.deviceId.slice(0, 5)}...)`}
             </MenuItem>
           ))}
-          {devices.length === 0 && <MenuItem disabled>No microphones found</MenuItem>}
+          {devices.length === 0 && <MenuItem value="">{t.noMics}</MenuItem>}
         </Select>
       </FormControl>
       {devices.length > 0 && devices[0].label === "" && (
         <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
-          * Refresh page if labels are missing.
+          {t.refreshHint}
         </Typography>
       )}
     </Box>

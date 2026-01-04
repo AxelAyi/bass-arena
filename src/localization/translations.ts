@@ -1,4 +1,3 @@
-
 import { AppLanguage } from '../state/store';
 
 export const translations: Record<AppLanguage, any> = {
@@ -75,7 +74,7 @@ export const translations: Record<AppLanguage, any> = {
       maintenanceDrill: 'Maintenance Drill',
       masteredLabel: 'Mastered',
       weakSpotLabel: 'Weak Spot',
-      deployCustom: 'Deploy Custom Drill'
+      deployCustom: 'Start Custom Drill'
     },
     session: {
       question: 'Question',
@@ -183,9 +182,7 @@ export const translations: Record<AppLanguage, any> = {
       description: 'BassArena was born out of a desire to create a practical, real-time tool for bassists of all levels. I wanted to design a method that makes learning fun and enjoyable, bridging the gap between traditional practice and modern interactive software.',
       contact: 'Get in Touch',
       emailLabel: 'For requests, issues, or just to say hi:',
-      footer: '© 2024 Axel A. - Made for bassists, by a bassist.',
-      bassist: 'BASSIST',
-      coder: 'CODER'
+      footer: '© 2024 Axel A. - Made for bassists, by a bassist.'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -271,7 +268,7 @@ export const translations: Record<AppLanguage, any> = {
       maintenanceDrill: 'Exercice de Maintenance',
       masteredLabel: 'Maîtrisé',
       weakSpotLabel: 'Point Faible',
-      deployCustom: 'Déployer l\'exercice'
+      deployCustom: 'Lancer l\'exercice'
     },
     session: {
       question: 'Question',
@@ -379,9 +376,7 @@ export const translations: Record<AppLanguage, any> = {
       description: 'BassArena est né d\'une volonté de créer un outil pratique et temps réel pour les bassistes de tous niveaux. Je voulais rendre l\'apprentissage plus ludique et plaisant, en faisant le pont entre la pratique traditionnelle et les technologies interactive modernes.',
       contact: 'Contact',
       emailLabel: 'Pour toute demande, problème ou simplement dire bonjour :',
-      footer: '© 2024 Axel A. - Fait par un bassiste, pour les bassistes.',
-      bassist: 'BASSISTE',
-      coder: 'CODEUR'
+      footer: '© 2024 Axel A. - Fait par un bassiste, pour les bassistes.'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -467,7 +462,7 @@ export const translations: Record<AppLanguage, any> = {
       maintenanceDrill: 'Ejercicio de Mantenimiento',
       masteredLabel: 'Dominado',
       weakSpotLabel: 'Punto Débil',
-      deployCustom: 'Desplegar ejercicio'
+      deployCustom: 'Iniciar ejercicio'
     },
     session: {
       question: 'Pregunta',
@@ -576,8 +571,6 @@ export const translations: Record<AppLanguage, any> = {
       contact: 'Contacto',
       emailLabel: 'Para cualquier solicitud, problema o simplemente saludar:',
       footer: '© 2024 Axel A. - Hecho por un bajista, para bajistas.',
-      bassist: 'BAJISTA',
-      coder: 'PROGRAMADOR'
     },
     mic: {
       required: 'Acceso al Micrófono Requerido',
