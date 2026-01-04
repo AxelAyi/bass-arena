@@ -16,7 +16,9 @@ export class AudioEngine {
   private filter: BiquadFilterNode | null = null;
   private onProcess: (stats: AudioStats) => void;
 
-  private bufferSize = 4096; 
+  // Reduced from 4096 to 2048 to cut latency in half (~46ms @ 44.1kHz)
+  // 2048 is still enough for low bass frequencies down to ~22Hz.
+  private bufferSize = 2048; 
 
   constructor(onProcess: (stats: AudioStats) => void) {
     this.onProcess = onProcess;
@@ -48,10 +50,11 @@ export class AudioEngine {
 
       this.source = this.audioContext.createMediaStreamSource(this.stream);
 
+      // Tightened lowpass to focus on bass fundamentals
       this.filter = this.audioContext.createBiquadFilter();
       this.filter.type = 'lowpass';
-      this.filter.frequency.value = 1000;
-      this.filter.Q.value = 0.7;
+      this.filter.frequency.value = 600; 
+      this.filter.Q.value = 1;
 
       this.analyzer = this.audioContext.createScriptProcessor(this.bufferSize, 1, 1);
       
@@ -67,7 +70,8 @@ export class AudioEngine {
         const inputData = e.inputBuffer.getChannelData(0);
         const rms = calculateRMS(inputData);
         
-        const pitchFreq = detectPitchYIN(inputData, this.audioContext.sampleRate, 0.15);
+        // Use a slightly more aggressive threshold for faster candidate rejection
+        const pitchFreq = detectPitchYIN(inputData, this.audioContext.sampleRate, 0.12);
         const pitch = pitchFreq ? frequencyToNote(pitchFreq) : null;
         
         this.onProcess({
@@ -118,9 +122,7 @@ export class AudioEngine {
     if (this.source) this.source.disconnect();
     
     if (this.stream) {
-      this.stream.getTracks().forEach(track => {
-        track.stop();
-      });
+      this.stream.getTracks().forEach(track => track.stop());
       this.stream = null;
     }
 
@@ -128,15 +130,9 @@ export class AudioEngine {
       if (this.audioContext.state !== 'closed') {
         try {
           await this.audioContext.close();
-        } catch (e) {
-          console.warn("Cleanup error:", e);
-        }
+        } catch (e) {}
       }
       this.audioContext = null;
     }
-    
-    this.source = null;
-    this.filter = null;
-    this.analyzer = null;
   }
 }

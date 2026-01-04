@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -6,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import StarIcon from '@mui/icons-material/Star';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import { PROGRAMS, DayTask } from '../data/program30days';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
@@ -85,11 +85,12 @@ const Program: React.FC = () => {
   const progressPercent = (masteredCount / filteredDays.length) * 100;
 
   const isTaskUnlocked = useCallback((taskIndex: number) => {
+    if (settings.unlockAllExercises) return true;
     if (taskIndex === 0) return true;
     const prevTask = filteredDays[taskIndex - 1];
     const prevStats = dailyStats[prevTask.day];
     return !!(prevStats && prevStats.bestAcc >= settings.minUnlockAccuracy);
-  }, [filteredDays, dailyStats, settings.minUnlockAccuracy]);
+  }, [filteredDays, dailyStats, settings.minUnlockAccuracy, settings.unlockAllExercises]);
 
   const sanitizeText = useCallback((task: DayTask, type: 'title' | 'description') => {
     let clean = '';
@@ -196,8 +197,12 @@ const Program: React.FC = () => {
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <MenuBookIcon color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
+        <Typography variant="h5" fontWeight="900" sx={{ letterSpacing: -1 }}>{t.title}</Typography>
+      </Box>
+
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" gutterBottom fontWeight="900" sx={{ mb: 1 }}>{t.title}</Typography>
         <Paper 
           sx={{ 
             mb: 3,

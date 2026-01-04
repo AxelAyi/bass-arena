@@ -23,25 +23,22 @@ const FretboardHeatmap: React.FC<FretboardHeatmapProps> = ({ onSelectPosition })
     if (!stats || stats.attempts === 0) return -1;
     
     const accuracy = stats.corrects / stats.attempts;
-    const avgTime = stats.totalTime / stats.attempts;
     
-    // Normalized scores
-    const accScore = 1 - accuracy;
-    const speedScore = Math.min(1, avgTime / settings.timeLimit);
-    
-    // Weighted combination
-    return (accScore * 0.7) + (speedScore * 0.3);
+    // Time is no longer considered in the calculation of the Mastered state.
+    // Speed is considered "High" as long as the note was played within the allowed time limit.
+    // We only return the accuracy-based weakness score (1.0 = 0% accuracy, 0.0 = 100% accuracy).
+    return (1 - accuracy);
   };
 
   const getCellColor = (score: number, stats?: FretboardItemStats) => {
     if (score === -1) return 'rgba(255, 255, 255, 0.05)'; // Unplayed
     
-    // Low attempts (< 3) are treated as weak or unknown
+    // Minimum 3 attempts required to be eligible for Mastered (Green)
     if (stats && stats.attempts < 3) return '#f44336'; 
     
-    if (score < 0.2) return '#4caf50'; // Green (Mastered)
-    if (score < 0.5) return '#ffeb3b'; // Yellow (Acceptable)
-    return '#f44336'; // Red (Weak Spot)
+    if (score < 0.2) return '#4caf50'; // Green (Mastered: > 80% accuracy)
+    if (score < 0.5) return '#ffeb3b'; // Yellow (Acceptable: > 50% accuracy)
+    return '#f44336'; // Red (Weak Spot: <= 50% accuracy)
   };
 
   return (

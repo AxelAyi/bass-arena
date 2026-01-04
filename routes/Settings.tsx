@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Typography, Paper, Slider, Switch, FormControlLabel, Divider, FormGroup, Select, MenuItem, FormControl, InputLabel, ButtonBase, Button } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import CheckIcon from '@mui/icons-material/Check';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useStore } from '../state/store';
 import MicSelector from '../components/MicSelector';
 import { translations } from '../localization/translations';
@@ -40,7 +40,7 @@ const Settings: React.FC = () => {
 
   const colorOptions = [
     { name: 'Blue', value: '#2196f3' },
-    { name: 'Orange', value: '#ff9800' },
+    { name: 'Cyan', value: '#00bcd4' },
     { name: 'Green', value: '#4caf50' },
     { name: 'Purple', value: '#9c27b0' },
     { name: 'Red', value: '#f44336' },
@@ -85,8 +85,11 @@ const Settings: React.FC = () => {
   const shouldDisplayNote = testStats && testStats.pitch && testStats.rms >= settings.rmsThreshold;
 
   return (
-    <Box sx={{ maxWidth: 900, mx: 'auto', mb: 4 }}>
-      <Typography variant="h5" gutterBottom fontWeight="900" sx={{ mb: 3, letterSpacing: -1 }}>{t.title}</Typography>
+    <Box sx={{ pb: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <SettingsIcon color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
+        <Typography variant="h5" fontWeight="900" sx={{ letterSpacing: -1 }}>{t.title}</Typography>
+      </Box>
       
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>
@@ -252,6 +255,7 @@ const Settings: React.FC = () => {
               </Box>
               
               <FormGroup>
+                <FormControlLabel control={<Switch checked={settings.unlockAllExercises} onChange={handleSwitch('unlockAllExercises')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.unlockAllExercises}</Typography>} />
                 <FormControlLabel control={<Switch checked={settings.strictOctave} onChange={handleSwitch('strictOctave')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.strictOctave}</Typography>} />
                 <FormControlLabel control={<Switch checked={settings.showFretNumber} onChange={handleSwitch('showFretNumber')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.showFret}</Typography>} />
                 <FormControlLabel control={<Switch checked={settings.lockString} onChange={handleSwitch('lockString')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.validateString}</Typography>} />

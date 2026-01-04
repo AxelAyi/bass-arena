@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Divider, Card, CardContent, Stack, Chip, useTheme, useMediaQuery } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -6,8 +5,7 @@ import { useLocation } from 'react-router-dom';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
-import HistoryEduIcon from '@mui/icons-material/HistoryEdu';
-import AssessmentIcon from '@mui/icons-material/Assessment';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 
 import { getAllPositionsInRanges, FretPosition, getFretInfo } from '../data/fretboard';
 import SessionRunner from '../components/SessionRunner';
@@ -42,14 +40,17 @@ const FreeTraining: React.FC = () => {
   };
 
   const getWeaknessScore = (stats: FretboardItemStats | undefined) => {
-    if (!stats || stats.attempts === 0) return 0.5;
+    if (!stats || stats.attempts === 0) return 1.0; // High weakness for never played
+    
     const accuracy = stats.corrects / stats.attempts;
-    const avgTime = stats.totalTime / stats.attempts;
     const accScore = 1 - accuracy;
-    const speedScore = Math.min(1, avgTime / settings.timeLimit);
+    
+    // Time is no longer considered in the calculation of the Mastered state or sorting.
+    // Recency boost stays to ensure we revisit notes that haven't been practiced in a while.
     const hoursSinceLast = (Date.now() - stats.lastAttempt) / (1000 * 60 * 60);
-    const recencyBoost = Math.min(0.2, hoursSinceLast / 100); 
-    return (accScore * 0.6) + (speedScore * 0.3) + (recencyBoost * 0.1);
+    const recencyBoost = Math.min(0.15, hoursSinceLast / 168); // Prioritize if not seen in a week
+    
+    return accScore + recencyBoost;
   };
 
   const executeSession = useCallback((customQs?: FretPosition[], customTitle?: string) => {
@@ -130,202 +131,187 @@ const FreeTraining: React.FC = () => {
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
 
+  const sharedTitleStyles = {
+    fontWeight: 900,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1.5
+  } as const;
+
+  const sharedButtonStyles = {
+    py: 1.8,
+    fontWeight: 900,
+    borderRadius: 1,
+    borderWidth: 2,
+    fontSize: '0.9rem',
+    '&:hover': { borderWidth: 2 }
+  } as const;
+
   return (
     <Box sx={{ pb: 6 }}>
-      {/* Header Section */}
-      <Box sx={{ mb: 5, display: 'flex', alignItems: 'center', gap: 2.5 }}>
-        <Box 
-          sx={{ 
-            bgcolor: 'primary.main', 
-            p: 1.5, 
-            borderRadius: 2, 
-            display: 'flex',
-            boxShadow: `0 4px 20px ${theme.palette.primary.main}40`
-          }}
-        >
-          <HistoryEduIcon sx={{ color: 'primary.contrastText', fontSize: 28 }} />
-        </Box>
-        <Box>
-          <Typography variant="h4" fontWeight="900" sx={{ letterSpacing: -1.5, lineHeight: 1.1 }}>
-            {t.title}
-          </Typography>
-          <Typography variant="body1" color="textSecondary" sx={{ mt: 0.5 }}>
-            {t.description}
-          </Typography>
-        </Box>
+      {/* Page Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <FitnessCenterIcon color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
+        <Typography variant="h5" fontWeight="900" sx={{ letterSpacing: -1 }}>{t.title}</Typography>
       </Box>
 
-      <Stack spacing={5}>
-        {/* 1. Full-Width Fretboard Dashboard */}
+      <Stack spacing={4}>
+        {/* Heatmap Section */}
         <Paper 
           elevation={0} 
           sx={{ 
-            borderRadius: 4, 
+            borderRadius: 1, 
             overflow: 'hidden',
             border: '1px solid',
             borderColor: 'divider',
-            bgcolor: 'background.paper'
+            bgcolor: 'background.paper',
+            p: { xs: 2, md: 3 }
           }}
         >
-          {/* Dashboard Header */}
-          <Box sx={{ px: 4, py: 3, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <AssessmentIcon color="primary" />
-              <Typography variant="h6" fontWeight="900" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, fontSize: '0.9rem' }}>
-                Neck Mastery Map
+              <Box sx={{ width: 4, height: 24, bgcolor: 'primary.main', borderRadius: 0.5 }} />
+              <Typography variant="subtitle1" fontWeight="900" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {t.heatmap}
               </Typography>
             </Box>
-            <Typography variant="caption" color="textSecondary" sx={{ fontStyle: 'italic', display: { xs: 'none', sm: 'block' } }}>
-              Click any note to start a target drill
-            </Typography>
+            
+            {/* Legend integrated into header level */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Box sx={{ width: 10, height: 10, bgcolor: '#4caf50', borderRadius: 0.2 }} />
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>Mastered</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Box sx={{ width: 10, height: 10, bgcolor: '#f44336', borderRadius: 0.2 }} />
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.8 }}>Weak Spot</Typography>
+              </Box>
+            </Box>
           </Box>
 
-          {/* Map Area - Full Width */}
-          <Box sx={{ p: { xs: 1, md: 3 }, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
-            <FretboardHeatmap onSelectPosition={(s, f) => {
-                executeSession([getFretInfo(s, f)], `Target Drill: ${getFretInfo(s, f).noteName}`);
-            }} />
-          </Box>
+          <FretboardHeatmap />
 
-          {/* Insights Footer - Dedicated row below map */}
           <Box sx={{ 
-            px: 4, 
-            py: 3, 
-            bgcolor: 'background.default', 
+            mt: 2,
+            pt: 2,
             borderTop: '1px solid', 
             borderColor: 'divider'
           }}>
-            <Grid container spacing={4} alignItems="center">
-              {/* Coverage Metric */}
-              <Grid size={{ xs: 12, md: 3 }}>
-                <Box sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                  <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', display: 'block', mb: 0.5 }}>
-                    {t.neckCoverage}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, justifyContent: { xs: 'center', md: 'flex-start' } }}>
-                    <Typography variant="h3" fontWeight="900" color="primary.main">
-                      {coveragePercent}%
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              spacing={{ xs: 2, sm: 4 }} 
+              alignItems="center" 
+              divider={<Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
+                  {t.neckCoverage}:
+                </Typography>
+                <Typography variant="h6" fontWeight="900" color="primary.main">
+                  {coveragePercent}%
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflow: 'hidden' }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                  {t.topWeakNotes}:
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'nowrap', overflowX: 'auto', pb: 0.5 }}>
+                  {weakNotesList.map(({ key }) => {
+                    const s = parseInt(key.split('f')[0].substring(1));
+                    const f = parseInt(key.split('f')[1]);
+                    const info = getFretInfo(s, f);
+                    return (
+                      <Chip 
+                        key={key}
+                        label={`${translateNoteName(info.noteName, settings.noteNaming)} (${translateNoteName(info.stringName, settings.noteNaming)})`}
+                        variant="outlined"
+                        size="small"
+                        sx={{ 
+                          fontWeight: 900,
+                          borderRadius: 0.5,
+                          borderColor: 'error.main',
+                          color: 'error.main',
+                          bgcolor: 'rgba(244, 67, 54, 0.05)',
+                          fontSize: '0.65rem'
+                        }}
+                      />
+                    );
+                  })}
+                  {weakNotesList.length === 0 && (
+                    <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                      No data collected yet.
                     </Typography>
-                    <Typography variant="body2" color="textSecondary" fontWeight="700">Explored</Typography>
-                  </Box>
+                  )}
                 </Box>
-              </Grid>
-
-              <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' }, mx: 2 }} />
-
-              {/* Weak Notes Metric */}
-              <Grid size={{ xs: 12, md: 8 }}>
-                <Box sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                  <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', display: 'block', mb: 1.5 }}>
-                    {t.topWeakNotes}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: { xs: 'center', md: 'flex-start' } }}>
-                    {weakNotesList.map(({ key }) => {
-                      const s = parseInt(key.split('f')[0].substring(1));
-                      const f = parseInt(key.split('f')[1]);
-                      const info = getFretInfo(s, f);
-                      return (
-                        <Chip 
-                          key={key}
-                          label={`${translateNoteName(info.noteName, settings.noteNaming)} (${translateNoteName(info.stringName, settings.noteNaming)})`}
-                          variant="outlined"
-                          size="medium"
-                          sx={{ 
-                            fontWeight: 900,
-                            borderRadius: 2,
-                            borderColor: 'error.main',
-                            color: 'error.main',
-                            bgcolor: 'rgba(244, 67, 54, 0.05)',
-                            px: 1
-                          }}
-                        />
-                      );
-                    })}
-                    {weakNotesList.length === 0 && (
-                      <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                        No data collected yet. Start playing to see insights!
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-              </Grid>
-            </Grid>
+              </Box>
+            </Stack>
           </Box>
         </Paper>
 
-        {/* Action Grid */}
-        <Grid container spacing={4}>
-          {/* Fix Weak Spots CTA */}
+        <Grid container spacing={3}>
+          {/* Fix Weak Spots Block */}
           <Grid size={{ xs: 12, lg: 5 }}>
-            <Card 
+            <Paper 
               elevation={0}
               sx={{ 
                 height: '100%',
-                borderRadius: 4,
-                position: 'relative',
-                overflow: 'hidden',
-                background: theme.palette.mode === 'dark' 
-                  ? `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(255, 152, 0, 0.1) 100%)`
-                  : `linear-gradient(145deg, #fff 0%, rgba(255, 152, 0, 0.05) 100%)`,
+                p: 4,
+                borderRadius: 1,
                 border: '1px solid',
-                borderColor: 'primary.main',
-                boxShadow: `0 10px 30px rgba(0,0,0,0.1)`
+                borderColor: 'divider',
+                bgcolor: 'background.paper'
               }}
             >
-              <CardContent sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <Box sx={{ bgcolor: 'primary.main', p: 1, borderRadius: 1.5 }}>
-                    <PsychologyIcon sx={{ color: 'primary.contrastText' }} />
-                  </Box>
-                  <Typography variant="h5" fontWeight="900">{t.fixWeakSpots}</Typography>
-                </Box>
-                
-                <Typography variant="body1" color="textSecondary" sx={{ mb: 4, lineHeight: 1.7 }}>
-                  {t.weakSpotsDesc}
-                </Typography>
-                
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  size="large"
-                  fullWidth
-                  onClick={handleFixWeakSpots}
-                  sx={{ py: 2, fontWeight: 900, borderRadius: 2.5, boxShadow: 6 }}
-                >
-                  Analyze & Start Drill
-                </Button>
-              </CardContent>
-              <Box sx={{ position: 'absolute', bottom: -20, right: -20, opacity: 0.05 }}>
-                <PsychologyIcon sx={{ fontSize: 180 }} />
-              </Box>
-            </Card>
+              <Typography variant="subtitle1" sx={{ ...sharedTitleStyles, mb: 4 }}>
+                <PsychologyIcon color="primary" />
+                {t.fixWeakSpots}
+              </Typography>
+              
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 4, lineHeight: 1.7, minHeight: 80 }}>
+                {t.weakSpotsDesc}
+              </Typography>
+              
+              <Button 
+                variant="outlined" 
+                color="primary" 
+                size="large"
+                fullWidth
+                onClick={handleFixWeakSpots}
+                startIcon={<PsychologyIcon />}
+                sx={sharedButtonStyles}
+              >
+                Analyze & Start Drill
+              </Button>
+            </Paper>
           </Grid>
 
-          {/* Custom Session Builder */}
+          {/* Custom Session Block */}
           <Grid size={{ xs: 12, lg: 7 }}>
             <Paper 
               elevation={0}
               sx={{ 
                 p: 4, 
-                borderRadius: 4, 
+                borderRadius: 1, 
                 height: '100%',
                 border: '1px solid',
-                borderColor: 'divider'
+                borderColor: 'divider',
+                bgcolor: 'background.paper'
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+              <Typography variant="subtitle1" sx={{ ...sharedTitleStyles, mb: 4 }}>
                 <DashboardCustomizeIcon color="primary" />
-                <Typography variant="h6" fontWeight="900" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Custom Session Setup
-                </Typography>
-              </Box>
+                Custom Session Setup
+              </Typography>
 
               <Grid container spacing={4}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="subtitle2" gutterBottom fontWeight="800" color="textSecondary">
-                    {t.fretRange.toUpperCase()}
+                  <Typography variant="caption" gutterBottom fontWeight="800" color="textSecondary" sx={{ textTransform: 'uppercase', mb: 1, display: 'block' }}>
+                    {t.fretRange}
                   </Typography>
-                  <Box sx={{ px: 1, mt: 3 }}>
+                  <Box sx={{ px: 1, mt: 2 }}>
                     <Slider 
                       value={fretRange} 
                       onChange={(_, val) => setFretRange(val as number[])} 
@@ -342,8 +328,8 @@ const FreeTraining: React.FC = () => {
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="subtitle2" gutterBottom fontWeight="800" color="textSecondary">
-                    {t.strings.toUpperCase()}
+                  <Typography variant="caption" gutterBottom fontWeight="800" color="textSecondary" sx={{ textTransform: 'uppercase', mb: 1, display: 'block' }}>
+                    {t.strings}
                   </Typography>
                   <FormGroup row sx={{ mt: 1 }}>
                     {availableStrings.map(s => (
@@ -356,7 +342,7 @@ const FreeTraining: React.FC = () => {
                             size="small"
                           />
                         } 
-                        label={<Typography variant="body2" fontWeight="700">{translateNoteName(s, settings.noteNaming)}</Typography>} 
+                        label={<Typography variant="caption" fontWeight="700">{translateNoteName(s, settings.noteNaming)}</Typography>} 
                         sx={{ mr: 2 }}
                       />
                     ))}
@@ -364,10 +350,10 @@ const FreeTraining: React.FC = () => {
                 </Grid>
 
                 <Grid size={{ xs: 12 }}>
-                  <Typography variant="subtitle2" gutterBottom fontWeight="800" color="textSecondary">
-                    {t.numQuestions.toUpperCase()}: <Box component="span" sx={{ color: 'primary.main' }}>{questionCount}</Box>
+                  <Typography variant="caption" gutterBottom fontWeight="800" color="textSecondary" sx={{ textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' }}>
+                    {t.numQuestions} <span>{questionCount}</span>
                   </Typography>
-                  <Box sx={{ px: 1, mt: 2 }}>
+                  <Box sx={{ px: 1, mt: 1 }}>
                     <Slider 
                       value={questionCount} 
                       onChange={(_, val) => setQuestionCount(val as number)} 
@@ -389,7 +375,7 @@ const FreeTraining: React.FC = () => {
                   onClick={startSession} 
                   startIcon={<TrackChangesIcon />} 
                   disabled={availableStrings.every(s => !selectedStrings[s as keyof typeof selectedStrings])}
-                  sx={{ py: 1.8, fontWeight: 900, borderRadius: 2.5, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
+                  sx={sharedButtonStyles}
                 >
                   Deploy Custom Drill
                 </Button>

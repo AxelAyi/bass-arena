@@ -49,7 +49,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const [detected, setDetected] = useState<AudioStats | null>(null);
   const [stabilityCounter, setStabilityCounter] = useState(0);
   const [engineError, setEngineError] = useState<string | null>(null);
-  const [waitingForSilence, setWaitingForSilence] = useState(true);
 
   const resultsRef = useRef<{ correct: boolean, time: number, note: string }[]>([]);
   const scoreRef = useRef<number>(0);
@@ -60,6 +59,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const questionStartTimeRef = useRef<number>(Date.now());
   const stabilityCheckRef = useRef<number | null>(null);
   const wrongNoteLockoutRef = useRef<number | null>(null);
+  const lastValidatedMidiRef = useRef<number | null>(null);
 
   const isSequenceMode = !!sequence && sequence.length > 0;
   
@@ -108,7 +108,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     questionStartTimeRef.current = Date.now();
     setStabilityCounter(0);
     stabilityCheckRef.current = null;
-    setWaitingForSilence(true); 
+    wrongNoteLockoutRef.current = null;
 
     if (isSequenceMode && sequence) {
       if (sequenceIdx < sequence.length - 1) {
@@ -129,7 +129,8 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     if (isFinished) return;
     const timeTaken = (Date.now() - questionStartTimeRef.current) / 1000;
     
-    // Record mastery if not in sequence mode
+    lastValidatedMidiRef.current = currentTargetMidi;
+
     if (currentQuestionMeta) {
       recordAttempt(currentQuestionMeta.string, currentQuestionMeta.fret, true, timeTaken);
     }
@@ -147,7 +148,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     } else {
       finishSession();
     }
-  }, [isFinished, isSequenceMode, sequence, sequenceIdx, currentIdx, questions.length, currentTargetName, currentQuestionMeta, nextStep, finishSession, recordAttempt]);
+  }, [isFinished, isSequenceMode, sequence, sequenceIdx, currentIdx, questions.length, currentTargetName, currentTargetMidi, currentQuestionMeta, nextStep, finishSession, recordAttempt]);
 
   const handleFailure = useCallback(() => {
     if (isFinished) return;
@@ -156,7 +157,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       audioEngineRef.current.playFailureSound();
     }
     
-    // Record mastery failure if not in sequence mode
     if (currentQuestionMeta) {
       recordAttempt(currentQuestionMeta.string, currentQuestionMeta.fret, false, settings.timeLimit);
     }
@@ -182,18 +182,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     setDetected(stats);
     const isActive = stats.rms >= settings.rmsThreshold;
     
-    if (waitingForSilence) {
-      if (!isActive) {
-        setWaitingForSilence(false);
-      } else if (stats.pitch) {
-        const isTargetMatch = validateNote(stats.pitch.midi, currentTargetMidi, settings.strictOctave);
-        if (isTargetMatch) {
-          setWaitingForSilence(false);
-        }
-      }
-      return;
-    }
-
+    // Quick exit if no valid signal
     if (!stats.pitch || !isActive) {
       setStabilityCounter(0);
       stabilityCheckRef.current = null;
@@ -203,13 +192,20 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     const isValid = validateNote(stats.pitch.midi, currentTargetMidi, settings.strictOctave);
     
     if (isValid) {
+      // If we just validated this MIDI note for a previous step, require a small drop in RMS or a change 
+      // to avoid auto-validating identical adjacent notes in a sequence (e.g. scales)
+      if (lastValidatedMidiRef.current === stats.pitch.midi && isSequenceMode) {
+          return;
+      }
+
       if (stabilityCheckRef.current === null) {
         stabilityCheckRef.current = Date.now();
         wrongNoteLockoutRef.current = null;
       } else {
         const elapsed = Date.now() - stabilityCheckRef.current;
-        setStabilityCounter(Math.min(100, (elapsed / settings.stabilityMs) * 100));
-        if (elapsed >= settings.stabilityMs) {
+        // Use a faster multiplier for UI feedback
+        setStabilityCounter(Math.min(100, (elapsed / (settings.stabilityMs || 30)) * 100));
+        if (elapsed >= (settings.stabilityMs || 30)) {
           handleSuccess();
         }
       }
@@ -217,15 +213,22 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       setStabilityCounter(0);
       stabilityCheckRef.current = null;
       
+      // If the user plays a wrong note, we allow a tiny grace period before failing
+      // to avoid failing on transient "scrape" noises during finger shifts.
       if (!settings.allowMultipleAttempts) {
         if (wrongNoteLockoutRef.current === null) {
           wrongNoteLockoutRef.current = Date.now();
-        } else if (Date.now() - wrongNoteLockoutRef.current > 80) {
+        } else if (Date.now() - wrongNoteLockoutRef.current > 60) { // 60ms grace
           handleFailure();
         }
       }
+      
+      // If user plays a different note, clear the "same-note" lock
+      if (lastValidatedMidiRef.current !== stats.pitch.midi) {
+          lastValidatedMidiRef.current = null;
+      }
     }
-  }, [currentTargetMidi, settings, handleSuccess, handleFailure, waitingForSilence]);
+  }, [currentTargetMidi, settings, handleSuccess, handleFailure, isSequenceMode]);
 
   useEffect(() => {
     audioEngineRef.current = new AudioEngine(handleAudioProcess);
@@ -356,7 +359,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
               color={stabilityCounter === 100 ? "success" : "primary"}
             />
             <Typography variant="body2" color="textSecondary">
-              {waitingForSilence ? t.mute : t.stability}
+              {t.stability}
             </Typography>
           </Box>
           <VuMeter rms={detected?.rms || 0} threshold={settings.rmsThreshold} />

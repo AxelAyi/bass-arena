@@ -1,8 +1,8 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type AppLanguage = 'en' | 'fr' | 'es';
+export type MetronomeSound = 'beep' | 'tick' | 'wood';
 
 export interface FretboardItemStats {
   attempts: number;
@@ -27,6 +27,12 @@ export interface UserSettings {
   noteNaming: 'english' | 'latin';
   language: AppLanguage;
   primaryColor: string;
+  // Metronome Settings
+  metronomeEnabled: boolean;
+  metronomeBpm: number;
+  metronomeVolume: number;
+  metronomeSound: MetronomeSound;
+  metronomeBeatsPerMeasure: number;
 }
 
 export interface SessionResult {
@@ -57,7 +63,7 @@ export const useStore = create<AppState>()(
       settings: {
         rmsThreshold: 0.01,
         pitchTolerance: 30,
-        stabilityMs: 200,
+        stabilityMs: 30,
         timeLimit: 5,
         strictOctave: false,
         showFretNumber: true,
@@ -69,7 +75,12 @@ export const useStore = create<AppState>()(
         themeMode: 'dark',
         noteNaming: 'english',
         language: 'en',
-        primaryColor: '#ff9800',
+        primaryColor: '#2196f3',
+        metronomeEnabled: false,
+        metronomeBpm: 100,
+        metronomeVolume: 0.5,
+        metronomeSound: 'tick',
+        metronomeBeatsPerMeasure: 4,
       },
       history: [],
       mastery: {},
@@ -100,7 +111,13 @@ export const useStore = create<AppState>()(
       setMicEnabled: (enabled) => set({ isMicEnabled: enabled }),
     }),
     {
-      name: 'bass-master-storage-v2',
+      name: 'bass-arena-storage-v2',
+      partialize: (state) => ({
+        settings: state.settings,
+        history: state.history,
+        mastery: state.mastery,
+        activeProgramId: state.activeProgramId,
+      }),
     }
   )
 );

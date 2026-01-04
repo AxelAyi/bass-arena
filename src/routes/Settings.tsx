@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Box, Typography, Paper, Slider, Switch, FormControlLabel, Divider, FormGroup, Select, MenuItem, FormControl, InputLabel, ButtonBase, Button, Alert } from '@mui/material';
+import { Box, Typography, Paper, Slider, Switch, FormControlLabel, Divider, FormGroup, Select, MenuItem, FormControl, InputLabel, ButtonBase, Button } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import CheckIcon from '@mui/icons-material/Check';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useStore } from '../state/store';
 import MicSelector from '../components/MicSelector';
 import { translations } from '../localization/translations';
@@ -40,7 +40,7 @@ const Settings: React.FC = () => {
 
   const colorOptions = [
     { name: 'Blue', value: '#2196f3' },
-    { name: 'Orange', value: '#ff9800' },
+    { name: 'Cyan', value: '#00bcd4' },
     { name: 'Green', value: '#4caf50' },
     { name: 'Purple', value: '#9c27b0' },
     { name: 'Red', value: '#f44336' },
@@ -86,12 +86,15 @@ const Settings: React.FC = () => {
 
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto', mb: 4 }}>
-      <Typography variant="h5" gutterBottom fontWeight="900" sx={{ mb: 3, letterSpacing: -1 }}>{t.title}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <SettingsIcon color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
+        <Typography variant="h5" fontWeight="900" sx={{ letterSpacing: -1 }}>{t.title}</Typography>
+      </Box>
       
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
+            <Paper sx={{ p: 3, borderRadius: 1 }}>
               <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.audioInput}</Typography>
               <Divider sx={{ mb: 2 }} />
               
@@ -99,7 +102,7 @@ const Settings: React.FC = () => {
                 <MicSelector />
               </Box>
 
-              <Box sx={{ mb: 3, p: 2, bgcolor: 'rgba(0,0,0,0.2)', borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)' }}>
+              <Box sx={{ mb: 3, p: 2, bgcolor: 'rgba(0,0,0,0.2)', borderRadius: 1, border: '1px solid rgba(255,255,255,0.05)' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                   <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
                     {t.liveMonitor}
@@ -165,7 +168,7 @@ const Settings: React.FC = () => {
               </Box>
             </Paper>
 
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
+            <Paper sx={{ p: 3, borderRadius: 1 }}>
               <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.instrument}</Typography>
               <Divider sx={{ mb: 2 }} />
               
@@ -180,7 +183,7 @@ const Settings: React.FC = () => {
 
         <Grid size={{ xs: 12, md: 6 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
+            <Paper sx={{ p: 3, borderRadius: 1 }}>
               <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.localization}</Typography>
               <Divider sx={{ mb: 2 }} />
 
@@ -233,7 +236,7 @@ const Settings: React.FC = () => {
               </Box>
             </Paper>
 
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
+            <Paper sx={{ p: 3, borderRadius: 1 }}>
               <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.trainingRules}</Typography>
               <Divider sx={{ mb: 2 }} />
 
