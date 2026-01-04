@@ -75,7 +75,7 @@ export const translations: Record<AppLanguage, any> = {
       maintenanceDrill: 'Maintenance Drill',
       masteredLabel: 'Mastered',
       weakSpotLabel: 'Weak Spot',
-      deployCustom: 'Deploy Custom Drill'
+      deployCustom: 'Start Custom Drill'
     },
     session: {
       question: 'Question',
@@ -271,7 +271,7 @@ export const translations: Record<AppLanguage, any> = {
       maintenanceDrill: 'Exercice de Maintenance',
       masteredLabel: 'Maîtrisé',
       weakSpotLabel: 'Point Faible',
-      deployCustom: 'Déployer l\'exercice'
+      deployCustom: 'Lancer l\'exercice'
     },
     session: {
       question: 'Question',
@@ -467,7 +467,7 @@ export const translations: Record<AppLanguage, any> = {
       maintenanceDrill: 'Ejercicio de Mantenimiento',
       masteredLabel: 'Dominado',
       weakSpotLabel: 'Punto Débil',
-      deployCustom: 'Desplegar ejercicio'
+      deployCustom: 'Iniciar ejercicio'
     },
     session: {
       question: 'Pregunta',
