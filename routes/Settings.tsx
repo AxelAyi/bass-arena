@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Box, Typography, Paper, Slider, Switch, FormControlLabel, Divider, FormGroup, Select, MenuItem, FormControl, InputLabel, ButtonBase, Button } from '@mui/material';
+// Added Stack to the MUI imports to fix "Cannot find name 'Stack'" errors
+import { Box, Typography, Paper, Slider, Switch, FormControlLabel, Divider, FormGroup, Select, MenuItem, FormControl, InputLabel, ButtonBase, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Stack } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import CheckIcon from '@mui/icons-material/Check';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import SettingsIcon from '@mui/icons-material/Settings';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import { useStore } from '../state/store';
 import MicSelector from '../components/MicSelector';
 import { translations } from '../localization/translations';
@@ -12,13 +16,16 @@ import { AudioEngine, AudioStats } from '../audio/audioEngine';
 import VuMeter from '../components/VuMeter';
 
 const Settings: React.FC = () => {
-  const { settings, updateSettings, isMicEnabled } = useStore();
+  const { settings, history, mastery, activeProgramId, updateSettings, isMicEnabled, importState, resetStore } = useStore();
   const t = translations[settings.language].settings;
   const ts = translations[settings.language].session;
 
   const [isTesting, setIsTesting] = useState(false);
   const [testStats, setTestStats] = useState<AudioStats | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean, message: string, severity: 'success' | 'error' | 'info' }>({ open: false, message: '', severity: 'info' });
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const audioEngineRef = useRef<AudioEngine | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSlider = (key: string) => (_: any, value: number | number[]) => {
     updateSettings({ [key]: value });
@@ -56,6 +63,60 @@ const Settings: React.FC = () => {
 
   const toggleTest = () => {
     setIsTesting(prev => !prev);
+  };
+
+  const handleExport = () => {
+    try {
+      const data = {
+        settings,
+        history,
+        mastery,
+        activeProgramId,
+        exportDate: new Date().toISOString(),
+        version: '2.0'
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bassarena-backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Export failed', severity: 'error' });
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const json = JSON.parse(evt.target?.result as string);
+        if (json.settings && json.mastery) {
+          importState(json);
+          setSnackbar({ open: true, message: t.importSuccess, severity: 'success' });
+        } else {
+          throw new Error('Invalid format');
+        }
+      } catch (err) {
+        setSnackbar({ open: true, message: t.importError, severity: 'error' });
+      }
+      e.target.value = ''; // Reset input
+    };
+    reader.readAsText(file);
+  };
+
+  const handleConfirmReset = () => {
+    resetStore();
+    setResetDialogOpen(false);
+    setSnackbar({ open: true, message: t.resetSuccess, severity: 'info' });
   };
 
   useEffect(() => {
@@ -261,9 +322,81 @@ const Settings: React.FC = () => {
                 <FormControlLabel control={<Switch checked={settings.lockString} onChange={handleSwitch('lockString')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.validateString}</Typography>} />
               </FormGroup>
             </Paper>
+
+            <Paper sx={{ p: 3, borderRadius: 2 }}>
+              <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.dataManagement}</Typography>
+              <Divider sx={{ mb: 2 }} />
+              {/* Stack added to the imports above to resolve reference errors */}
+              <Stack direction="column" spacing={2}>
+                <Button 
+                  variant="outlined" 
+                  startIcon={<CloudDownloadIcon />} 
+                  fullWidth 
+                  onClick={handleExport}
+                >
+                  {t.exportData}
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  startIcon={<CloudUploadIcon />} 
+                  fullWidth 
+                  onClick={handleImportClick}
+                >
+                  {t.importData}
+                </Button>
+                <input
+                  type="file"
+                  accept=".json"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleImportFile}
+                />
+                <Button 
+                  variant="outlined" 
+                  color="error" 
+                  startIcon={<RestartAltIcon />} 
+                  fullWidth 
+                  onClick={() => setResetDialogOpen(true)}
+                  sx={{ mt: 2 }}
+                >
+                  {t.resetData}
+                </Button>
+              </Stack>
+            </Paper>
           </Box>
         </Grid>
       </Grid>
+
+      {/* Confirmation Dialog for Reset */}
+      <Dialog
+        open={resetDialogOpen}
+        onClose={() => setResetDialogOpen(false)}
+      >
+        <DialogTitle>{t.resetConfirmTitle}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t.resetConfirmDesc}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetDialogOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmReset} color="error" variant="contained">
+            {t.resetData}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert severity={snackbar.severity} variant="filled" sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

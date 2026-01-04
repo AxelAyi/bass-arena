@@ -32,6 +32,15 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Stop Test',
       testHint: 'Start test to verify audio input selection.',
       noteLabel: 'Note',
+      dataManagement: 'Data Management',
+      exportData: 'Export Progress',
+      importData: 'Import Progress',
+      resetData: 'Reset All Data',
+      resetConfirmTitle: 'Clear everything?',
+      resetConfirmDesc: 'This will permanently delete your settings, session history, and fretboard mastery. This cannot be undone.',
+      importSuccess: 'Data imported successfully',
+      importError: 'Invalid backup file',
+      resetSuccess: 'Data cleared',
       colors: {
         blue: 'Blue',
         cyan: 'Cyan',
@@ -183,9 +192,7 @@ export const translations: Record<AppLanguage, any> = {
       description: 'BassArena was born out of a desire to create a practical, real-time tool for bassists of all levels. I wanted to design a method that makes learning fun and enjoyable, bridging the gap between traditional practice and modern interactive software.',
       contact: 'Get in Touch',
       emailLabel: 'For requests, issues, or just to say hi:',
-      footer: '© 2024 Axel A. - Made for bassists, by a bassist.',
-      bassist: 'BASSIST',
-      coder: 'CODER'
+      footer: '© 2024 Axel A. - Made for bassists, by a bassist.'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -228,6 +235,15 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Arrêter le test',
       testHint: 'Lancez le test pour vérifier l\'entrée audio.',
       noteLabel: 'Note',
+      dataManagement: 'Gestion des Données',
+      exportData: 'Exporter ma Progression',
+      importData: 'Importer une Sauvegarde',
+      resetData: 'Tout Réinitialiser',
+      resetConfirmTitle: 'Tout effacer ?',
+      resetConfirmDesc: 'Ceci supprimera définitivement vos paramètres, votre historique et votre maîtrise du manche. Cette action est irréversible.',
+      importSuccess: 'Données importées avec succès',
+      importError: 'Fichier de sauvegarde invalide',
+      resetSuccess: 'Données réinitialisées',
       colors: {
         blue: 'Bleu',
         cyan: 'Cyan',
@@ -379,9 +395,7 @@ export const translations: Record<AppLanguage, any> = {
       description: 'BassArena est né d\'une volonté de créer un outil pratique et temps réel pour les bassistes de tous niveaux. Je voulais rendre l\'apprentissage plus ludique et plaisant, en faisant le pont entre la pratique traditionnelle et les technologies interactive modernes.',
       contact: 'Contact',
       emailLabel: 'Pour toute demande, problème ou simplement dire bonjour :',
-      footer: '© 2024 Axel A. - Fait par un bassiste, pour les bassistes.',
-      bassist: 'BASSISTE',
-      coder: 'CODEUR'
+      footer: '© 2024 Axel A. - Fait par un bassiste, pour les bassistes.'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -424,6 +438,15 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Detener Prueba',
       testHint: 'Inicia la prueba para verificar la entrada.',
       noteLabel: 'Note',
+      dataManagement: 'Gestión de Datos',
+      exportData: 'Exportar Progreso',
+      importData: 'Importar Copia',
+      resetData: 'Reiniciar Todo',
+      resetConfirmTitle: '¿Borrar todo?',
+      resetConfirmDesc: 'Esto borrará permanentemente tus ajustes, historial y dominio del mástil. Esta acción no se puede deshacer.',
+      importSuccess: 'Datos importados con éxito',
+      importError: 'Archivo de copia inválido',
+      resetSuccess: 'Datos reiniciados',
       colors: {
         blue: 'Azul',
         cyan: 'Cian',
@@ -528,8 +551,8 @@ export const translations: Record<AppLanguage, any> = {
       ruleOf5Desc: 'El 5º traste es la misma note que la cuerda superior.',
       constructionTitle: 'Construcción de Escalas',
       constructionDesc: 'Se utilizan tonos y semitonos para construir escalas.',
-      majorPattern: 'Escala Mayor: T - T - S - T - T - T - S',
-      minorPattern: 'Escala Menor: T - S - T - T - S - T - T',
+      majorPattern: 'Escala Mayor:',
+      minorPattern: 'Escala Menor:',
       exCMajorFull: 'Example: Escala de Do Mayor',
       exCMinorFull: 'Example: Escala de Do Menor',
       pentatonicTitle: 'La Lógica de las 5 Notas',
@@ -566,8 +589,8 @@ export const translations: Record<AppLanguage, any> = {
       tick: 'Tick',
       wood: 'Caja de madera',
       timeSignature: 'Compás',
-      enabled: 'Metrónomo ON',
-      disabled: 'Metrónomo OFF',
+      enabled: 'Metronome ON',
+      disabled: 'Metronome OFF',
     },
     about: {
       title: 'Acerca de BassArena',
@@ -576,8 +599,6 @@ export const translations: Record<AppLanguage, any> = {
       contact: 'Contacto',
       emailLabel: 'Para cualquier solicitud, problema o simplemente saludar:',
       footer: '© 2024 Axel A. - Hecho por un bajista, para bajistas.',
-      bassist: 'BAJISTA',
-      coder: 'PROGRAMADOR'
     },
     mic: {
       required: 'Acceso al Micrófono Requerido',
