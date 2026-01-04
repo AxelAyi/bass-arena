@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { Box, Paper, CircularProgress, Typography, useTheme } from '@mui/material';
 import * as OSMDNamespace from 'opensheetmusicdisplay';
@@ -25,7 +24,6 @@ const SheetMusic: React.FC<SheetMusicProps> = ({ midiNotes, currentIndex, isFive
       if (!containerRef.current) return;
 
       try {
-        // Handle various ESM/CJS export patterns from CDNs
         const OSMDClass = (OSMDNamespace as any).OpenSheetMusicDisplay || 
                           (OSMDNamespace as any).default?.OpenSheetMusicDisplay || 
                           (OSMDNamespace as any).default;

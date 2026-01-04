@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, Typography, 
@@ -26,7 +25,6 @@ const MicPermissionDialog: React.FC<MicPermissionDialogProps> = ({ open, onClose
     setLoading(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Cleanup the temporary stream immediately
       stream.getTracks().forEach(track => track.stop());
       
       setMicEnabled(true);

@@ -1,4 +1,3 @@
-
 import { AppLanguage } from '../state/store';
 
 export const translations: Record<AppLanguage, any> = {
@@ -32,13 +31,16 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Stop Test',
       testHint: 'Start test to verify audio input selection.',
       noteLabel: 'Note',
-      colors: {
-        blue: 'Blue',
-        cyan: 'Cyan',
-        green: 'Green',
-        purple: 'Purple',
-        red: 'Red'
-      }
+      dataManagement: 'Data Management',
+      exportData: 'Export Progress (JSON)',
+      importData: 'Import Progress (JSON)',
+      importSuccess: 'Progress imported successfully!',
+      importError: 'Failed to import. Invalid file format.',
+      resetData: 'Reset All Data',
+      resetSuccess: 'All data has been reset.',
+      resetConfirmTitle: 'Are you absolutely sure?',
+      resetConfirmDesc: 'This will permanently delete your settings, history, and fretboard mastery. This action cannot be undone.',
+      colors: { blue: 'Blue', cyan: 'Cyan', green: 'Green', purple: 'Purple', red: 'Red' }
     },
     program: {
       title: 'Guided Mastery',
@@ -230,13 +232,16 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Arrêter le test',
       testHint: 'Lancez le test pour vérifier l\'entrée audio.',
       noteLabel: 'Note',
-      colors: {
-        blue: 'Bleu',
-        cyan: 'Cyan',
-        green: 'Vert',
-        purple: 'Violet',
-        red: 'Rouge'
-      }
+      dataManagement: 'Gestion des Données',
+      exportData: 'Exporter ma Progression (JSON)',
+      importData: 'Importer ma Progression (JSON)',
+      importSuccess: 'Progression importée avec succès !',
+      importError: 'Échec de l\'importation. Format de fichier invalide.',
+      resetData: 'Réinitialiser toutes les Données',
+      resetSuccess: 'Toutes les données ont été réinitialisées.',
+      resetConfirmTitle: 'Êtes-vous absolument sûr ?',
+      resetConfirmDesc: 'Ceci supprimera définitivement vos paramètres, votre historique et votre maîtrise du manche. Cette action est irréversible.',
+      colors: { blue: 'Bleu', cyan: 'Cyan', green: 'Vert', purple: 'Violet', red: 'Rouge' }
     },
     program: {
       title: 'Maîtrise Guidée',
@@ -311,7 +316,7 @@ export const translations: Record<AppLanguage, any> = {
     theory: {
       title: 'Maîtriser la Théorie',
       modules: 'Modules',
-      navBasics: 'The Basics',
+      navBasics: 'Les Bases',
       navReading: 'Notation & Tabs',
       navGeometry: 'Géométrie du Manche',
       navConstruction: 'Gammes Complètes',
@@ -428,13 +433,16 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Detener Prueba',
       testHint: 'Inicia la prueba para verificar la entrada.',
       noteLabel: 'Note',
-      colors: {
-        blue: 'Azul',
-        cyan: 'Cian',
-        green: 'Verde',
-        purple: 'Púrpura',
-        red: 'Rojo'
-      }
+      dataManagement: 'Gestión de Datos',
+      exportData: 'Exportar Progreso (JSON)',
+      importData: 'Importar Progreso (JSON)',
+      importSuccess: '¡Progreso importado con éxito!',
+      importError: 'Error al importar. Formato de archivo inválido.',
+      resetData: 'Reiniciar todos los Datos',
+      resetSuccess: 'Todos los datos han sido reiniciados.',
+      resetConfirmTitle: '¿Estás absolutamente seguro?',
+      resetConfirmDesc: 'Esto eliminará permanentemente tus ajustes, historial y maestría del mástil. Esta acción no se puede deshacer.',
+      colors: { blue: 'Azul', cyan: 'Cian', green: 'Verde', purple: 'Púrpura', red: 'Rojo' }
     },
     program: {
       title: 'Maestría Guiada',
