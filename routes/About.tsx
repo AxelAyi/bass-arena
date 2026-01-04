@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Box, Typography, Paper, Avatar, Link, IconButton, Divider } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -5,6 +6,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import HandymanIcon from '@mui/icons-material/Handyman';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
 
@@ -45,15 +47,28 @@ const About: React.FC = () => {
             <Box sx={{ display: 'flex', gap: 3, mt: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <MusicNoteIcon color="primary" sx={{ fontSize: 32 }} />
-                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>{t.bassist}</Typography>
+                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>{t.bassist || 'BASSIST'}</Typography>
               </Box>
               <Box sx={{ textAlign: 'center' }}>
                 <HandymanIcon color="primary" sx={{ fontSize: 32 }} />
-                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>{t.coder}</Typography>
+                <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, mt: 0.5 }}>{t.coder || 'CODER'}</Typography>
               </Box>
             </Box>
           </Grid>
         </Grid>
+      </Paper>
+
+      {/* AI Experimentation Note */}
+      <Paper sx={{ p: 4, borderRadius: 2, mb: 4, border: '1px dashed', borderColor: 'primary.main', bgcolor: 'rgba(255, 152, 0, 0.05)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1.5 }}>
+          <AutoAwesomeIcon color="primary" />
+          <Typography variant="h6" fontWeight="900" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            {t.aiExperimentTitle}
+          </Typography>
+        </Box>
+        <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.8, fontStyle: 'italic' }}>
+          {t.aiExperimentBody}
+        </Typography>
       </Paper>
 
       <Paper sx={{ p: 4, borderRadius: 2, mb: 4, bgcolor: 'primary.main', color: 'primary.contrastText' }}>

@@ -1,3 +1,4 @@
+
 import { AppLanguage } from '../state/store';
 
 export const translations: Record<AppLanguage, any> = {
@@ -184,7 +185,9 @@ export const translations: Record<AppLanguage, any> = {
       emailLabel: 'For requests, issues, or just to say hi:',
       footer: '© 2024 Axel A. - Made for bassists, by a bassist.',
       bassist: 'Bassist',
-      coder: 'Coder'
+      coder: 'Coder',
+      aiExperimentTitle: 'Engineering Note: AI Experimentation',
+      aiExperimentBody: 'This application is an experimentation of quick application building with the help of AI. As an engineer, I believe we need to live with our time and get familiar with modern tooling to push the boundaries of what is possible.'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -308,7 +311,7 @@ export const translations: Record<AppLanguage, any> = {
     theory: {
       title: 'Maîtriser la Théorie',
       modules: 'Modules',
-      navBasics: 'Les Bases',
+      navBasics: 'The Basics',
       navReading: 'Notation & Tabs',
       navGeometry: 'Géométrie du Manche',
       navConstruction: 'Gammes Complètes',
@@ -380,7 +383,9 @@ export const translations: Record<AppLanguage, any> = {
       emailLabel: 'Pour toute demande, problème ou simplement dire bonjour :',
       footer: '© 2024 Axel A. - Fait par un bassiste, pour les bassistes.',
       bassist: 'Bassiste',
-      coder: 'Codeur'
+      coder: 'Codeur',
+      aiExperimentTitle: 'Note Technique : Expérimentation IA',
+      aiExperimentBody: 'Cette application est une expérimentation sur la construction rapide d\'applications avec l\'aide de l\'IA. En tant qu\'ingénieur, je pense qu\'il faut vivre avec son temps et se familiariser avec les outils modernes pour repousser les limites du possible.'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -449,7 +454,7 @@ export const translations: Record<AppLanguage, any> = {
       strings: 'Cuerdas',
       numQuestions: 'Preguntas',
       start: 'Empezar sesión',
-      fixWeakSpots: 'Corriger Puntos Débiles',
+      fixWeakSpots: 'Corregir Puntos Débiles',
       weakSpotsDesc: 'Ejercicio auto-generado que apunta a las notas que más fallas o reconoces más lento.',
       heatmap: 'Mapa del Mástil',
       heatmapDesc: 'Vista coloreada de tu rendimiento en todo el diapasón.',
@@ -527,8 +532,8 @@ export const translations: Record<AppLanguage, any> = {
       ruleOf5Desc: 'El 5º traste es la misma note que la cuerda superior.',
       constructionTitle: 'Construcción de Escalas',
       constructionDesc: 'Se utilizan tonos y semitonos para construir escalas.',
-      majorPattern: 'Escala Mayor: T - T - S - T - T - T - S',
-      minorPattern: 'Escala Menor: T - S - T - T - S - T - T',
+      majorPattern: 'Escala Mayor:',
+      minorPattern: 'Escala Menor:',
       exCMajorFull: 'Example: Escala de Do Mayor',
       exCMinorFull: 'Example: Escala de Do Menor',
       pentatonicTitle: 'La Lógica de las 5 Notas',
@@ -576,7 +581,9 @@ export const translations: Record<AppLanguage, any> = {
       emailLabel: 'Para cualquier solicitud, problema o simplemente saludar:',
       footer: '© 2024 Axel A. - Hecho por un bajista, para bajistas.',
       bassist: 'Bajista',
-      coder: 'Programador'
+      coder: 'Programador',
+      aiExperimentTitle: 'Nota de Ingeniería: Experimentación con IA',
+      aiExperimentBody: 'Esta aplicación es una experimentación sobre la construcción rápida de aplicaciones con la ayuda de la IA. Como ingeniero, creo que debemos vivir con nuestro tiempo y familiarizarnos con las herramientas modernas para ampliar los límites de lo posible.'
     },
     mic: {
       required: 'Acceso al Micrófono Requerido',
