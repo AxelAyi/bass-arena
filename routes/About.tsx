@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Box, Typography, Paper, Avatar, Link, IconButton, Divider } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -24,7 +23,7 @@ const About: React.FC = () => {
           <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', justifyContent: 'center' }}>
             <Avatar
               alt="Axel A."
-              src="input_file_0.png"
+              src="https://axelayi.github.io/bass-arena-assets/images/axel-mononeon.jpg"
               sx={{ 
                 width: 220, 
                 height: 220, 

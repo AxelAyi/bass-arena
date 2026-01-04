@@ -1,4 +1,3 @@
-
 import { AppLanguage } from '../state/store';
 
 export const translations: Record<AppLanguage, any> = {
@@ -32,15 +31,6 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Stop Test',
       testHint: 'Start test to verify audio input selection.',
       noteLabel: 'Note',
-      dataManagement: 'Data Management',
-      exportData: 'Export Progress',
-      importData: 'Import Progress',
-      resetData: 'Reset All Data',
-      resetConfirmTitle: 'Clear everything?',
-      resetConfirmDesc: 'This will permanently delete your settings, session history, and fretboard mastery. This cannot be undone.',
-      importSuccess: 'Data imported successfully',
-      importError: 'Invalid backup file',
-      resetSuccess: 'Data cleared',
       colors: {
         blue: 'Blue',
         cyan: 'Cyan',
@@ -145,8 +135,8 @@ export const translations: Record<AppLanguage, any> = {
       ruleOf5Desc: 'Standard tuning is "perfect fourths". This means the 5th fret on any string is the same note as the open string above it.',
       constructionTitle: 'Building Full Scales',
       constructionDesc: 'Scales are defined by "Steps": a Half-Step (H) is 1 fret, and a Whole-Step (W) is 2 frets.',
-      majorPattern: 'Major Scale (Ionian):',
-      minorPattern: 'Natural Minor (Aeolian):',
+      majorPattern: 'Major Scale (Ionian): W - W - H - W - W - W - H',
+      minorPattern: 'Natural Minor (Aeolian): W - H - W - W - H - W - W',
       exCMajorFull: 'Example: C Major Scale',
       exCMinorFull: 'Example: C Minor Scale',
       pentatonicTitle: 'The 5-Note "Penta" Logic',
@@ -192,7 +182,9 @@ export const translations: Record<AppLanguage, any> = {
       description: 'BassArena was born out of a desire to create a practical, real-time tool for bassists of all levels. I wanted to design a method that makes learning fun and enjoyable, bridging the gap between traditional practice and modern interactive software.',
       contact: 'Get in Touch',
       emailLabel: 'For requests, issues, or just to say hi:',
-      footer: '© 2024 Axel A. - Made for bassists, by a bassist.'
+      footer: '© 2024 Axel A. - Made for bassists, by a bassist.',
+      bassist: 'Bassist',
+      coder: 'Coder'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -235,15 +227,6 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Arrêter le test',
       testHint: 'Lancez le test pour vérifier l\'entrée audio.',
       noteLabel: 'Note',
-      dataManagement: 'Gestion des Données',
-      exportData: 'Exporter ma Progression',
-      importData: 'Importer une Sauvegarde',
-      resetData: 'Tout Réinitialiser',
-      resetConfirmTitle: 'Tout effacer ?',
-      resetConfirmDesc: 'Ceci supprimera définitivement vos paramètres, votre historique et votre maîtrise du manche. Cette action est irréversible.',
-      importSuccess: 'Données importées avec succès',
-      importError: 'Fichier de sauvegarde invalide',
-      resetSuccess: 'Données réinitialisées',
       colors: {
         blue: 'Bleu',
         cyan: 'Cyan',
@@ -254,7 +237,7 @@ export const translations: Record<AppLanguage, any> = {
     },
     program: {
       title: 'Maîtrise Guidée',
-      mastered: 'Maîtrisé',
+      mastered: 'Masterisé',
       needAccuracy: 'de précision pour avancer',
       day: 'Tâche',
       best: 'Meilleur',
@@ -348,8 +331,8 @@ export const translations: Record<AppLanguage, any> = {
       ruleOf5Desc: 'La 5ème frette est la même note que la corde à vide supérieure.',
       constructionTitle: 'Construction des Gammes',
       constructionDesc: 'On utilise des "Tons" (T = 2 frettes) et des "Demi-tons" (D = 1 frette).',
-      majorPattern: 'Gamme Majeure (Ionien) :',
-      minorPattern: 'Gamme Mineure (Eolien) :',
+      majorPattern: 'Gamme Majeure (Ionien) : T - T - D - T - T - T - D',
+      minorPattern: 'Gamme Mineure (Eolien) : T - D - T - T - D - T - T',
       exCMajorFull: 'Example: Gamme de Do Majeur',
       exCMinorFull: 'Example: Gamme de Do Mineur',
       pentatonicTitle: 'La Logique des 5 Notes',
@@ -395,7 +378,9 @@ export const translations: Record<AppLanguage, any> = {
       description: 'BassArena est né d\'une volonté de créer un outil pratique et temps réel pour les bassistes de tous niveaux. Je voulais rendre l\'apprentissage plus ludique et plaisant, en faisant le pont entre la pratique traditionnelle et les technologies interactive modernes.',
       contact: 'Contact',
       emailLabel: 'Pour toute demande, problème ou simplement dire bonjour :',
-      footer: '© 2024 Axel A. - Fait par un bassiste, pour les bassistes.'
+      footer: '© 2024 Axel A. - Fait par un bassiste, pour les bassistes.',
+      bassist: 'Bassiste',
+      coder: 'Codeur'
     },
     mic: {
       required: 'Microphone Access Required',
@@ -438,15 +423,6 @@ export const translations: Record<AppLanguage, any> = {
       stopTest: 'Detener Prueba',
       testHint: 'Inicia la prueba para verificar la entrada.',
       noteLabel: 'Note',
-      dataManagement: 'Gestión de Datos',
-      exportData: 'Exportar Progreso',
-      importData: 'Importar Copia',
-      resetData: 'Reiniciar Todo',
-      resetConfirmTitle: '¿Borrar todo?',
-      resetConfirmDesc: 'Esto borrará permanentemente tus ajustes, historial y dominio del mástil. Esta acción no se puede deshacer.',
-      importSuccess: 'Datos importados con éxito',
-      importError: 'Archivo de copia inválido',
-      resetSuccess: 'Datos reiniciados',
       colors: {
         blue: 'Azul',
         cyan: 'Cian',
@@ -473,7 +449,7 @@ export const translations: Record<AppLanguage, any> = {
       strings: 'Cuerdas',
       numQuestions: 'Preguntas',
       start: 'Empezar sesión',
-      fixWeakSpots: 'Corregir Puntos Débiles',
+      fixWeakSpots: 'Corriger Puntos Débiles',
       weakSpotsDesc: 'Ejercicio auto-generado que apunta a las notas que más fallas o reconoces más lento.',
       heatmap: 'Mapa del Mástil',
       heatmapDesc: 'Vista coloreada de tu rendimiento en todo el diapasón.',
@@ -506,7 +482,7 @@ export const translations: Record<AppLanguage, any> = {
       active: 'Activo',
       belowGate: 'Bajo el umbral',
       perfect: '¡Perfecto!',
-      silence: 'Silencio',
+      silence: 'Silence',
       timeLeft: 'Tiempo restante',
       cents: 'cents',
       sharp: 'Agudo',
@@ -539,7 +515,7 @@ export const translations: Record<AppLanguage, any> = {
       stringsTitle: 'Nombre de cuerdas',
       halfStepTitle: 'Medios tonos',
       halfStepDesc: 'Casi todas las notas tienen sostenido/bemol excepto:',
-      readingDesc: 'Usamos Pentagrama y Tablatura.',
+      readingDesc: 'Usamos Pentagrama y Tablature.',
       tabTitle: 'Tablature (TAB)',
       tabDesc: 'Las 4 líneas représentent tus cuerdas.',
       staffTitle: 'Pentagrama',
@@ -551,8 +527,8 @@ export const translations: Record<AppLanguage, any> = {
       ruleOf5Desc: 'El 5º traste es la misma note que la cuerda superior.',
       constructionTitle: 'Construcción de Escalas',
       constructionDesc: 'Se utilizan tonos y semitonos para construir escalas.',
-      majorPattern: 'Escala Mayor:',
-      minorPattern: 'Escala Menor:',
+      majorPattern: 'Escala Mayor: T - T - S - T - T - T - S',
+      minorPattern: 'Escala Menor: T - S - T - T - S - T - T',
       exCMajorFull: 'Example: Escala de Do Mayor',
       exCMinorFull: 'Example: Escala de Do Menor',
       pentatonicTitle: 'La Lógica de las 5 Notas',
@@ -599,6 +575,8 @@ export const translations: Record<AppLanguage, any> = {
       contact: 'Contacto',
       emailLabel: 'Para cualquier solicitud, problema o simplemente saludar:',
       footer: '© 2024 Axel A. - Hecho por un bajista, para bajistas.',
+      bassist: 'Bajista',
+      coder: 'Programador'
     },
     mic: {
       required: 'Acceso al Micrófono Requerido',

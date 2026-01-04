@@ -1,33 +1,56 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BassArena</title>
+    
+    <!-- Primary Meta Tags -->
+    <title>BassArena - Professional Bass Fretboard Trainer & Real-time Pitch Tracker</title>
+    <meta name="title" content="BassArena - Professional Bass Fretboard Trainer" />
+    <meta name="description" content="Master the bass guitar fretboard in 30 days with real-time pitch detection. Interactive training, theory modules, and performance analytics for bassists of all levels." />
+    <meta name="keywords" content="bass guitar, fretboard trainer, bass notes, pitch detection, music theory, bass practice, web audio api, bass arena" />
+    <meta name="author" content="Axel A." />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bass-arena.vercel.app/" />
+    <meta property="og:title" content="BassArena - Professional Bass Fretboard Trainer" />
+    <meta property="og:description" content="Master your bass neck with real-time feedback. Developed to explore AI-driven interactive music education." />
+    <meta property="og:image" content="https://axelayi.github.io/bass-arena-assets/images/og-preview.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://bass-arena.vercel.app/" />
+    <meta property="twitter:title" content="BassArena - Professional Bass Fretboard Trainer" />
+    <meta property="twitter:description" content="Master your bass neck with real-time feedback. Professional tools for the modern bassist." />
+    <meta property="twitter:image" content="https://axelayi.github.io/bass-arena-assets/images/og-preview.png" />
+
+    <!-- Canonical Link -->
+    <link rel="canonical" href="https://bass-arena.vercel.app/" />
+
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
     <script src="https://cdn.tailwindcss.com"></script>
-  <script type="importmap">
-{
-  "imports": {
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom": "https://esm.sh/react-dom@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "@mui/material": "https://esm.sh/@mui/material@^6.4.4",
-    "@mui/material/": "https://esm.sh/@mui/material@^6.4.4/",
-    "@mui/icons-material/": "https://esm.sh/@mui/icons-material@^6.4.4/",
-    "@emotion/react": "https://esm.sh/@emotion/react@^11.14.0",
-    "@emotion/styled": "https://esm.sh/@emotion/styled@^11.14.0",
-    "zustand/": "https://esm.sh/zustand@^5.0.9/",
-    "zustand": "https://esm.sh/zustand@^5.0.9",
-    "opensheetmusicdisplay": "https://esm.sh/opensheetmusicdisplay@^1.8.8"
-  }
-}
-</script>
-</head>
+    <script type="importmap">
+    {
+      "imports": {
+        "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-dom": "https://esm.sh/react-dom@^19.2.3",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "@mui/material": "https://esm.sh/@mui/material@^6.4.4",
+        "@mui/material/": "https://esm.sh/@mui/material@^6.4.4/",
+        "@mui/icons-material/": "https://esm.sh/@mui/icons-material@^6.4.4/",
+        "@emotion/react": "https://esm.sh/@emotion/react@^11.14.0",
+        "@emotion/styled": "https://esm.sh/@emotion/styled@^11.14.0",
+        "zustand/": "https://esm.sh/zustand@^5.0.9/",
+        "zustand": "https://esm.sh/zustand@^5.0.9",
+        "opensheetmusicdisplay": "https://esm.sh/opensheetmusicdisplay@^1.8.8"
+      }
+    }
+    </script>
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
