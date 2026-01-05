@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Box, Typography, Button, Paper, Divider, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
+import { translateNoteName } from '../audio/noteUtils';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import TimerIcon from '@mui/icons-material/Timer';
 import StarIcon from '@mui/icons-material/Star';
@@ -61,7 +61,14 @@ const ScoreSummary: React.FC<ScoreSummaryProps> = ({ result, onClose, onReplay, 
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {failedNotes.map((note: string, idx: number) => (
-              <Chip key={idx} label={note} size="small" color="error" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />
+              <Chip 
+                key={idx} 
+                label={translateNoteName(note, settings.noteNaming)} 
+                size="small" 
+                color="error" 
+                variant="outlined" 
+                sx={{ height: 20, fontSize: '0.65rem' }} 
+              />
             ))}
           </Box>
         </Box>
