@@ -1,4 +1,3 @@
-
 export interface DayTask {
   day: number;
   title: string;
@@ -12,6 +11,7 @@ export interface DayTask {
   focusNotes?: string[];
   sequence?: number[]; 
   isFiveStringOnly?: boolean;
+  questionCount?: number; // Optional count of questions for this task
 }
 
 export interface TrainingProgram {
@@ -38,7 +38,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Conciencia de cuerdas al aire",
     description_es: "Identifica y toca las cuerdas al aire. Concéntrate en la afinación básica.",
     strings: [E, A, D, G, B], 
-    fretRange: [0, 0] 
+    fretRange: [0, 0],
+    questionCount: 10
   },
 
   // --- PHASE 2: FIRST POSITION (0-5) - ONE STRING ---
@@ -52,7 +53,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     description_es: "Concéntrate exclusivamente en los primeros 5 trastes de la cuerda Si grave.",
     strings: [B], 
     fretRange: [0, 5], 
-    isFiveStringOnly: true 
+    isFiveStringOnly: true,
+    questionCount: 12
   },
   { 
     day: 3, 
@@ -63,7 +65,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda Mi: Lineal 0-5",
     description_es: "Aprende los primeros 5 trastes de la cuerda Mi: Fa, Fa#, Sol, Sol#, La.",
     strings: [E], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 12
   },
   { 
     day: 4, 
@@ -74,7 +77,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda La: Lineal 0-5",
     description_es: "Aprende los primeros 5 trastes de la cuerda La: Sib, Si, Do, Do#, Re.",
     strings: [A], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 12
   },
   { 
     day: 5, 
@@ -85,7 +89,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda Re: Lineal 0-5",
     description_es: "Aprende los primeros 5 trastes de la cuerda Re: Mib, Mi, Fa, Fa#, Sol.",
     strings: [D], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 12
   },
   { 
     day: 6, 
@@ -96,7 +101,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda Sol: Lineal 0-5",
     description_es: "Aprende los primeros 5 trastes de la cuerda Sol: Lab, La, Sib, Si, Do.",
     strings: [G], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 12
   },
 
   // --- PHASE 3: FIRST POSITION (0-5) - TWO STRINGS ---
@@ -110,7 +116,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     description_es: "Alterna entre las cuerdas Si y Mi en la primera posición.",
     strings: [B, E], 
     fretRange: [0, 5], 
-    isFiveStringOnly: true 
+    isFiveStringOnly: true,
+    questionCount: 15
   },
   { 
     day: 8, 
@@ -121,7 +128,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Mezcla Base: Mi y La (0-5)",
     description_es: "Navega por el rango más común: las cuerdas Mi y La.",
     strings: [E, A], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 15
   },
   { 
     day: 9, 
@@ -132,7 +140,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Mezcla Media: La y Re (0-5)",
     description_es: "Conecta las cuerdas del registro medio en la primera posición.",
     strings: [A, D], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 15
   },
   { 
     day: 10, 
@@ -143,7 +152,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Mezcla Aguda: Re y Sol (0-5)",
     description_es: "Navega por las cuerdas más agudas en la primera posición.",
     strings: [D, G], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 15
   },
   { 
     day: 11, 
@@ -154,7 +164,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Salto Diagonal: Mi y Re (0-5)",
     description_es: "Practica saltar una cuerda en el registro grave.",
     strings: [E, D], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 15
   },
   { 
     day: 12, 
@@ -165,7 +176,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Salto Diagonal: La y Sol (0-5)",
     description_es: "Practica saltar una cuerda en el registro medio-agudo.",
     strings: [A, G], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 15
   },
 
   // --- PHASE 4: FIRST POSITION (0-5) - ALL STRINGS ---
@@ -178,7 +190,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Maestría del Traste 0-5",
     description_es: "Cualquier nota, cualquier cuerda, dentro de los primeros 5 trastes.",
     strings: [E, A, D, G, B], 
-    fretRange: [0, 5] 
+    fretRange: [0, 5],
+    questionCount: 20
   },
 
   // --- PHASE 5: MIDDLE POSITION (5-9) - ONE STRING ---
@@ -192,7 +205,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     description_es: "Concéntrate en el registro medio de la cuerda Si.",
     strings: [B], 
     fretRange: [5, 9], 
-    isFiveStringOnly: true 
+    isFiveStringOnly: true,
+    questionCount: 15
   },
   { 
     day: 15, 
@@ -203,7 +217,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda Mi: Medio 5-9",
     description_es: "Concéntrate en el registro medio de la cuerda Mi.",
     strings: [E], 
-    fretRange: [5, 9] 
+    fretRange: [5, 9],
+    questionCount: 15
   },
   { 
     day: 16, 
@@ -214,7 +229,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda La: Medio 5-9",
     description_es: "Concéntrate en el registro medio de la cuerda La.",
     strings: [A], 
-    fretRange: [5, 9] 
+    fretRange: [5, 9],
+    questionCount: 15
   },
   { 
     day: 17, 
@@ -225,7 +241,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda Re: Medio 5-9",
     description_es: "Concéntrate en el registro medio de la cuerda Re.",
     strings: [D], 
-    fretRange: [5, 9] 
+    fretRange: [5, 9],
+    questionCount: 15
   },
   { 
     day: 18, 
@@ -236,7 +253,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda Sol: Medio 5-9",
     description_es: "Concéntrate en el registro medio de la cuerda Sol.",
     strings: [G], 
-    fretRange: [5, 9] 
+    fretRange: [5, 9],
+    questionCount: 15
   },
 
   // --- PHASE 6: MIDDLE POSITION (5-9) - MIXED ---
@@ -249,7 +267,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Mezcla Grave Media (5-9)",
     description_es: "Combina las cuerdas graves en la posición central.",
     strings: [E, A], 
-    fretRange: [5, 9] 
+    fretRange: [5, 9],
+    questionCount: 20
   },
   { 
     day: 20, 
@@ -260,7 +279,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Mezcla Aguda Media (5-9)",
     description_es: "Combina las cuerdas agudas en la posición central.",
     strings: [D, G], 
-    fretRange: [5, 9] 
+    fretRange: [5, 9],
+    questionCount: 20
   },
   { 
     day: 21, 
@@ -271,7 +291,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Maestría del Centro del Mástil (5-9)",
     description_es: "Domina el centro del mástil en todas las cuerdas.",
     strings: [E, A, D, G, B], 
-    fretRange: [5, 9] 
+    fretRange: [5, 9],
+    questionCount: 25
   },
 
   // --- PHASE 7: UPPER POSITION (9-12) - ONE STRING ---
@@ -285,7 +306,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     description_es: "Concéntrate en el registro agudo de la cuerda Si.",
     strings: [B], 
     fretRange: [9, 12], 
-    isFiveStringOnly: true 
+    isFiveStringOnly: true,
+    questionCount: 15
   },
   { 
     day: 23, 
@@ -296,7 +318,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda Mi: Agudo 9-12",
     description_es: "Concéntrate en el registro agudo de la cuerda Mi (cerca de la octava).",
     strings: [E], 
-    fretRange: [9, 12] 
+    fretRange: [9, 12],
+    questionCount: 15
   },
   { 
     day: 24, 
@@ -307,7 +330,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda La: Agudo 9-12",
     description_es: "Concéntrate en el registro agudo de la cuerda La.",
     strings: [A], 
-    fretRange: [9, 12] 
+    fretRange: [9, 12],
+    questionCount: 15
   },
   { 
     day: 25, 
@@ -318,7 +342,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda Re: Agudo 9-12",
     description_es: "Concéntrate en el registro agudo de la cuerda Re.",
     strings: [D], 
-    fretRange: [9, 12] 
+    fretRange: [9, 12],
+    questionCount: 15
   },
   { 
     day: 26, 
@@ -329,7 +354,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Cuerda Sol: Agudo 9-12",
     description_es: "Concéntrate en el registro agudo de la cuerda Sol.",
     strings: [G], 
-    fretRange: [9, 12] 
+    fretRange: [9, 12],
+    questionCount: 15
   },
 
   // --- PHASE 8: UPPER POSITION (9-12) - MIXED ---
@@ -343,7 +369,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     description_es: "Cuerdas Si y Mi en el registro agudo.",
     strings: [B, E], 
     fretRange: [9, 12], 
-    isFiveStringOnly: true 
+    isFiveStringOnly: true,
+    questionCount: 20
   },
   { 
     day: 28, 
@@ -354,7 +381,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Mezcla La y Re Agudo (9-12)",
     description_es: "Alterna entre La y Re cerca del traste 12.",
     strings: [A, D], 
-    fretRange: [9, 12] 
+    fretRange: [9, 12],
+    questionCount: 20
   },
   { 
     day: 29, 
@@ -365,7 +393,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Maestría del Alto Mástil (9-12)",
     description_es: "Domina la zona antes de la octava.",
     strings: [E, A, D, G, B], 
-    fretRange: [9, 12] 
+    fretRange: [9, 12],
+    questionCount: 25
   },
 
   // --- PHASE 9: FULL STRING (0-12) ---
@@ -379,7 +408,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     description_es: "Conciencia lineal total de la cuerda Si hasta la octava.",
     strings: [B], 
     fretRange: [0, 12], 
-    isFiveStringOnly: true 
+    isFiveStringOnly: true,
+    questionCount: 25
   },
   { 
     day: 31, 
@@ -390,7 +420,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Toda la cuerda Mi (0-12)",
     description_es: "Conciencia lineal total de la cuerda Mi hasta la octava.",
     strings: [E], 
-    fretRange: [0, 12] 
+    fretRange: [0, 12],
+    questionCount: 25
   },
   { 
     day: 32, 
@@ -401,7 +432,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Toda la cuerda La (0-12)",
     description_es: "Conciencia lineal total de la cuerda La hasta la octava.",
     strings: [A], 
-    fretRange: [0, 12] 
+    fretRange: [0, 12],
+    questionCount: 25
   },
   { 
     day: 33, 
@@ -412,7 +444,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Toda la cuerda Re (0-12)",
     description_es: "Conciencia lineal total de la cuerda Re hasta la octava.",
     strings: [D], 
-    fretRange: [0, 12] 
+    fretRange: [0, 12],
+    questionCount: 25
   },
   { 
     day: 34, 
@@ -423,7 +456,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Toda la cuerda Sol (0-12)",
     description_es: "Conciencia lineal total de la cuerda Sol hasta la octava.",
     strings: [G], 
-    fretRange: [0, 12] 
+    fretRange: [0, 12],
+    questionCount: 25
   },
 
   // --- PHASE 10: FULL NECK (0-12) ---
@@ -437,7 +471,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     description_es: "Identifica Do, Re, Mi, Fa, Sol, La, Si en todo el mástil hasta el traste 12.",
     strings: [E, A, D, G, B], 
     fretRange: [0, 12], 
-    focusNotes: ["C", "D", "E", "F", "G", "A", "B"] 
+    focusNotes: ["C", "D", "E", "F", "G", "A", "B"],
+    questionCount: 35
   },
   { 
     day: 36, 
@@ -449,7 +484,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     description_es: "Concéntrate exclusivamente en las alteraciones en todas las cuerdas.",
     strings: [E, A, D, G, B], 
     fretRange: [0, 12], 
-    focusNotes: ["C#", "D#", "F#", "G#", "A#"] 
+    focusNotes: ["C#", "D#", "F#", "G#", "A#"],
+    questionCount: 30
   },
   { 
     day: 37, 
@@ -460,7 +496,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Fluidez Total (0-12)",
     description_es: "Ejercicio de identificación completo en los primeros 12 trastes.",
     strings: [E, A, D, G, B], 
-    fretRange: [0, 12] 
+    fretRange: [0, 12],
+    questionCount: 40
   },
 
   // --- PHASE 11: BEYOND THE 12th FRET ---
@@ -473,7 +510,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Alto Mástil: 12-15",
     description_es: "Aprende el final del mástil. Observa la repetición de octava.",
     strings: [E, A, D, G, B], 
-    fretRange: [12, 15] 
+    fretRange: [12, 15],
+    questionCount: 20
   },
   { 
     day: 39, 
@@ -484,7 +522,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Alto Mástil: 15-18",
     description_es: "Sube aún más por el mástil.",
     strings: [E, A, D, G, B], 
-    fretRange: [15, 18] 
+    fretRange: [15, 18],
+    questionCount: 20
   },
   { 
     day: 40, 
@@ -495,7 +534,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Los últimos trastes: 18-24",
     description_es: "Domina las notas más agudas de tu instrumento.",
     strings: [E, A, D, G, B], 
-    fretRange: [18, 24] 
+    fretRange: [18, 24],
+    questionCount: 20
   },
 
   // --- PHASE 12: FINAL CHALLENGE ---
@@ -508,7 +548,8 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_es: "Certificación Maestro del Mástil",
     description_es: "La prueba definitiva. Cualquier nota, cualquier cuerda, todo el mástil.",
     strings: [E, A, D, G, B], 
-    fretRange: [0, 24] 
+    fretRange: [0, 24],
+    questionCount: 50
   },
 ];
 

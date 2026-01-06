@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Box, Typography, IconButton, Container, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, IconButton, Container, CircularProgress, Alert, Paper, Stack } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useStore, SessionResult } from '../state/store';
 import { AudioEngine, AudioStats } from '../audio/audioEngine';
 import { FretPosition } from '../data/fretboard';
@@ -311,7 +311,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         <Box>
           <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{title}</Typography>
           <Typography variant="h6" color="textSecondary">
-            {isSequenceMode ? t.scaleDrill : `${t.question} ${currentIdx + 1} / ${questions.length}`}
+            {isSequenceMode ? t.scaleDrill : `${t.note} ${currentIdx + 1} / ${questions.length}`}
           </Typography>
         </Box>
         <Box sx={{ textAlign: 'right' }}>
@@ -330,18 +330,80 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         />
       )}
 
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Typography variant="h2" fontWeight="bold" sx={{ textTransform: 'uppercase' }}>
-          {translateNoteName(currentTargetName, settings.noteNaming)}
-        </Typography>
-        {!isSequenceMode && questions[currentIdx] && (
-          <Typography variant="h5" color="primary">
-            {t.playNote} {t.onThe} <u>{translateNoteName(questions[currentIdx].stringName, settings.noteNaming)}</u> {t.string}
+      {/* Primary Target Display */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        gap: { xs: 4, sm: 8 }, 
+        mb: 8, 
+        mt: isSequenceMode ? 2 : 6 
+      }}>
+        {/* Note section with fixed dimensions */}
+        <Box sx={{ textAlign: 'center', width: { xs: 'auto', sm: 220 } }}>
+          <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, display: 'block', mb: 1, opacity: 0.8 }}>
+            {t.note}
           </Typography>
+          <Box sx={{ height: { xs: '6rem', sm: '9rem' }, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography 
+              variant="h1" 
+              fontWeight="900" 
+              sx={{ 
+                textTransform: 'uppercase', 
+                fontSize: { xs: '6rem', sm: '7.5rem', md: '9rem' },
+                lineHeight: 1,
+                letterSpacing: -4,
+                color: 'text.primary',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {translateNoteName(currentTargetName, settings.noteNaming)}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* String hint section */}
+        {!isSequenceMode && questions[currentIdx] && (
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Paper 
+              elevation={0}
+              sx={{ 
+                px: 4, 
+                py: 2, 
+                borderRadius: 2, 
+                bgcolor: settings.themeMode === 'dark' ? 'rgba(33, 150, 243, 0.08)' : 'rgba(33, 150, 243, 0.04)',
+                color: 'primary.main',
+                border: '1px solid',
+                borderColor: 'rgba(33, 150, 243, 0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: { xs: 160, sm: 200 },
+                minHeight: 110, // Match the height of NoteDisplay for alignment if stacked
+                boxShadow: 'none'
+              }}
+            >
+              <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, mb: 1, opacity: 0.8, textAlign: 'center' }}>
+                {t.pluckString}
+              </Typography>
+              <Typography variant="h3" sx={{ fontWeight: 900, textAlign: 'center' }}>
+                {translateNoteName(questions[currentIdx].stringName, settings.noteNaming)}
+              </Typography>
+            </Paper>
+          </Box>
         )}
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
+      {/* Performance Monitor - Aligned and balanced */}
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', // Center vertically
+        gap: { xs: 3, md: 5 }, 
+        flexWrap: 'wrap' 
+      }}>
         <NoteDisplay 
           detectedNote={detected && detected.rms >= settings.rmsThreshold ? detected.pitch : null} 
           targetNoteName={currentTargetName}
@@ -350,17 +412,21 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
           debug={false}
           rms={detected?.rms || 0}
         />
-        <Box sx={{ width: 250 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+        
+        <Box sx={{ 
+          width: { xs: '100%', sm: 280 }, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center' 
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, justifyContent: 'center' }}>
             <CircularProgress 
               variant="determinate" 
               value={stabilityCounter} 
-              size={30} 
+              size={24} 
+              thickness={6}
               color={stabilityCounter === 100 ? "success" : "primary"}
             />
-            <Typography variant="body2" color="textSecondary">
-              {t.stability}
-            </Typography>
           </Box>
           <VuMeter rms={detected?.rms || 0} threshold={settings.rmsThreshold} />
         </Box>

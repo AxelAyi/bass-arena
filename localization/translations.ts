@@ -52,6 +52,7 @@ export const translations: Record<AppLanguage, any> = {
       noNotesError: "No notes found for this exercise's criteria. Check your 4/5 string settings.",
       fret: 'Fret',
       scale: 'Scale',
+      notes: 'notes'
     },
     training: {
       title: 'Training Room',
@@ -80,11 +81,9 @@ export const translations: Record<AppLanguage, any> = {
       deployCustom: 'Start Custom Drill'
     },
     session: {
-      question: 'Question',
+      note: 'Note',
       score: 'Score',
-      playNote: 'Play note',
-      onThe: 'on string',
-      string: '',
+      pluckString: 'String to pluck',
       hint: 'Hint',
       detected: 'DETECTED',
       stability: 'Stability',
@@ -159,7 +158,7 @@ export const translations: Record<AppLanguage, any> = {
       relativeHackDesc: 'Every Major Pentatonic scale shares the exact same notes as its Relative Minor. Find the root of the Major scale, then go down 3 frets to find its relative minor root.',
       visualBoxShapes: 'Visual Box Shapes',
       visualBoxShapesDesc: 'Focus on the shape rather than the names. Major and Minor pentatonics have consistent geometric "boxes" on the neck that you can slide to any key.',
-      scaleExplorer: 'Scale Explorer',
+      scaleExplorer: 'Explorer de Gammes',
       scaleExplorerDesc: 'Select a key and a scale type to visualize the patterns on the staff and tablature.',
       rootNote: 'Root Note',
       scaleType: 'Scale Type',
@@ -253,6 +252,7 @@ export const translations: Record<AppLanguage, any> = {
       noNotesError: "Aucune note trouvée pour ces critères. Vérifiez vos réglages 4/5 cordes.",
       fret: 'Frette',
       scale: 'Gamme',
+      notes: 'notes'
     },
     training: {
       title: 'Salle d\'Entraînement',
@@ -281,11 +281,9 @@ export const translations: Record<AppLanguage, any> = {
       deployCustom: 'Lancer l\'exercice'
     },
     session: {
-      question: 'Question',
+      note: 'Note',
       score: 'Score',
-      playNote: 'Jouez la note',
-      onThe: 'sur la corde de',
-      string: '',
+      pluckString: 'Corde à pincer',
       hint: 'Indice',
       detected: 'DÉTECTÉ',
       stability: 'Stabilité',
@@ -314,7 +312,7 @@ export const translations: Record<AppLanguage, any> = {
       failures: 'Notes à réviser',
     },
     theory: {
-      title: 'Maîtriser la Théorie',
+      title: 'Théorie du Bajo',
       modules: 'Modules',
       navBasics: 'Les Bases',
       navReading: 'Notation & Tabs',
@@ -454,6 +452,7 @@ export const translations: Record<AppLanguage, any> = {
       noNotesError: "No se encontraron notas.",
       fret: 'Traste',
       scale: 'Escala',
+      notes: 'notas'
     },
     training: {
       title: 'Sala de Práctica',
@@ -482,11 +481,9 @@ export const translations: Record<AppLanguage, any> = {
       deployCustom: 'Iniciar ejercicio'
     },
     session: {
-      question: 'Pregunta',
+      note: 'Nota',
       score: 'Puntos',
-      playNote: 'Toca la nota',
-      onThe: 'en la cuerda',
-      string: '',
+      pluckString: 'Cuerda a pulsar',
       hint: 'Pista',
       detected: 'DETECTADO',
       stability: 'Estabilidad',

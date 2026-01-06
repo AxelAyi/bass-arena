@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import { NoteInfo, translateNoteName } from '../audio/noteUtils';
@@ -35,37 +34,78 @@ const NoteDisplay: React.FC<NoteDisplayProps> = ({
     : '--';
 
   return (
-    <Paper elevation={4} sx={{ p: 4, textAlign: 'center', borderRadius: 4, minWidth: 200, bgcolor: 'background.paper' }}>
-      <Typography variant="h6" color="textSecondary" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>
-        {t.detected}
-      </Typography>
+    <Paper 
+      elevation={0} 
+      sx={{ 
+        p: 2, 
+        borderRadius: 2, 
+        width: 120, 
+        height: 110, // Slightly taller for better spacing
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        border: '1px solid', 
+        borderColor: 'divider', 
+        bgcolor: 'background.paper',
+        position: 'relative'
+      }}
+    >
+      {/* Fixed label at the top */}
       <Typography 
-        variant="h1" 
+        variant="caption" 
+        color="textSecondary" 
         sx={{ 
+          textTransform: 'uppercase', 
+          letterSpacing: 1, 
           fontWeight: 900, 
-          color: getStatusColor(),
-          textShadow: isCorrect ? '0 0 20px rgba(76, 175, 80, 0.5)' : 'none'
+          display: 'block', 
+          mb: 1,
+          fontSize: '0.65rem',
+          opacity: 0.7
         }}
       >
-        {displayName}
+        {t.detected}
       </Typography>
+
+      {/* Fixed height container for the note itself */}
+      <Box sx={{ 
+        height: 40, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <Typography 
+          variant="h4" 
+          sx={{ 
+            fontWeight: 900, 
+            color: getStatusColor(),
+            textShadow: isCorrect ? '0 0 10px rgba(76, 175, 80, 0.3)' : 'none',
+            lineHeight: 1,
+          }}
+        >
+          {displayName}
+        </Typography>
+      </Box>
       
-      {detectedNote && (
-        <Box sx={{ mt: 1 }}>
-          <Typography variant="body1" color={Math.abs(detectedNote.cents) < 15 ? 'success.light' : 'warning.light'}>
-            {detectedNote.cents > 0 ? `+${detectedNote.cents}` : detectedNote.cents} {t.cents}
+      {/* Fixed height container for cents to prevent jumping */}
+      <Box sx={{ 
+        height: 20, 
+        mt: 0.5, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        {detectedNote && (
+          <Typography variant="caption" sx={{ fontWeight: 800, color: Math.abs(detectedNote.cents) < 15 ? 'success.light' : 'warning.light' }}>
+            {detectedNote.cents > 0 ? `+${detectedNote.cents}` : detectedNote.cents}c
           </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.6, fontWeight: 700, textTransform: 'uppercase' }}>
-            {detectedNote.cents > 0 ? t.sharp : detectedNote.cents < 0 ? t.flat : t.perfect}
-          </Typography>
-        </Box>
-      )}
+        )}
+      </Box>
 
       {debug && (
-        <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'left' }}>
-          <Typography variant="caption" component="pre">
-            Freq: {detectedNote?.frequency.toFixed(2) || 0} Hz<br/>
-            RMS: {rms.toFixed(4)}
+        <Box sx={{ position: 'absolute', bottom: -40, left: 0, right: 0, textAlign: 'center' }}>
+          <Typography variant="caption" component="pre" sx={{ fontSize: '0.6rem', color: 'text.secondary' }}>
+            {detectedNote?.frequency.toFixed(2) || 0}Hz | RMS: {rms.toFixed(4)}
           </Typography>
         </Box>
       )}

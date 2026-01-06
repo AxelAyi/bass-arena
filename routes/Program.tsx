@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -143,7 +142,7 @@ const Program: React.FC = () => {
 
     if (filteredPool.length === 0) return [];
 
-    const targetCount = 10;
+    const targetCount = task.questionCount || 10;
     let finalQuestions: FretPosition[] = [];
     
     const shuffledPool = [...filteredPool].sort(() => 0.5 - Math.random());
@@ -312,6 +311,9 @@ const Program: React.FC = () => {
 
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       <Chip label={`${t.fret} ${task.fretRange[0]}-${task.fretRange[1]}`} size="small" variant="outlined" sx={{ borderRadius: 1, fontSize: '0.7rem' }} />
+                      {activeProgramId !== 'pentatonic' && (
+                        <Chip label={`${task.questionCount || 10} ${t.notes}`} size="small" variant="outlined" sx={{ borderRadius: 1, fontSize: '0.7rem', opacity: 0.6 }} />
+                      )}
                       {task.sequence && <Chip label={`♪ ${t.scale}`} size="small" color="secondary" variant="filled" sx={{ fontWeight: 700, borderRadius: 1, fontSize: '0.7rem' }} />}
                     </Box>
                   </CardContent>
