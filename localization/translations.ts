@@ -83,7 +83,7 @@ export const translations: Record<AppLanguage, any> = {
       question: 'Question',
       score: 'Score',
       playNote: 'Play note',
-      onThe: 'on the',
+      onThe: 'on string',
       string: '',
       hint: 'Hint',
       detected: 'DETECTED',
