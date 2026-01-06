@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 // Fix: Use module import and cast to any to resolve missing named exports
 import * as ReactRouterDOM from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box, AppBar, Toolbar, Typography, Button, Container, BottomNavigation, BottomNavigationAction, Paper, IconButton, Menu, MenuItem, useMediaQuery } from '@mui/material';
@@ -24,6 +24,14 @@ import Tuner from './components/Tuner';
 
 // Fix: Extract components/hooks from the casted module object
 const { HashRouter: Router, Routes, Route, Link, useLocation } = ReactRouterDOM as any;
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
 
 const Navigation = () => {
   const { settings } = useStore();
@@ -103,6 +111,7 @@ const App: React.FC = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
+        <ScrollToTop />
         <Box sx={{ pb: 10, minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
           <AppBar 
             position="sticky" 
