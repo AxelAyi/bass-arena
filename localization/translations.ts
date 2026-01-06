@@ -2,7 +2,7 @@ import { AppLanguage } from '../state/store';
 
 export const translations: Record<AppLanguage, any> = {
   en: {
-    nav: { program: 'Program', training: 'Training', theory: 'Theory', settings: 'Settings', setup: 'Setup', tuner: 'Afinador', about: 'About' },
+    nav: { program: 'Program', training: 'Training', theory: 'Theory', settings: 'Settings', setup: 'Setup', tuner: 'Tuner', about: 'About' },
     welcome: {
       title: 'Welcome to BassArena!',
       subtitle: 'Prepare your Gear',
