@@ -30,7 +30,7 @@ const NoteDisplay: React.FC<NoteDisplayProps> = ({
   };
 
   const displayName = detectedNote 
-    ? translateNoteName(detectedNote.noteName, settings.noteNaming) 
+    ? translateNoteName(detectedNote.noteName, settings.noteNaming).toUpperCase() 
     : '--';
 
   return (
@@ -40,7 +40,7 @@ const NoteDisplay: React.FC<NoteDisplayProps> = ({
         p: 2, 
         borderRadius: 2, 
         width: 120, 
-        height: 110, // Slightly taller for better spacing
+        height: 110, 
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

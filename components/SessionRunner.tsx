@@ -1,4 +1,5 @@
-import { Box, Typography, IconButton, Container, CircularProgress, Alert, Paper, Stack } from '@mui/material';
+import { Box, Typography, IconButton, Container, CircularProgress, Alert, Paper, Stack, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useStore, SessionResult } from '../state/store';
@@ -39,6 +40,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   sequence
 }) => {
   const { settings, addSessionResult, recordAttempt } = useStore();
+  const theme = useTheme();
   const t = translations[settings.language].session;
   
   const [currentIdx, setCurrentIdx] = useState(0); 
@@ -59,7 +61,11 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const questionStartTimeRef = useRef<number>(Date.now());
   const stabilityCheckRef = useRef<number | null>(null);
   const wrongNoteLockoutRef = useRef<number | null>(null);
-  const lastValidatedMidiRef = useRef<number | null>(null);
+  
+  // Track the note that was playing when we transitioned questions (ringing sustain)
+  const lastTransitionMidiRef = useRef<number | null>(null);
+  // Track if we are currently ignoring the sustain of that note
+  const isIgnoringSustainRef = useRef<boolean>(false);
 
   const isSequenceMode = !!sequence && sequence.length > 0;
   
@@ -109,6 +115,9 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     setStabilityCounter(0);
     stabilityCheckRef.current = null;
     wrongNoteLockoutRef.current = null;
+    
+    // Flag that the new question starts by ignoring whatever was just heard
+    isIgnoringSustainRef.current = true;
 
     if (isSequenceMode && sequence) {
       if (sequenceIdx < sequence.length - 1) {
@@ -129,7 +138,8 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     if (isFinished) return;
     const timeTaken = (Date.now() - questionStartTimeRef.current) / 1000;
     
-    lastValidatedMidiRef.current = currentTargetMidi;
+    // Store whatever note just gave us the win so we can ignore its ringing sustain
+    lastTransitionMidiRef.current = currentTargetMidi;
 
     if (currentQuestionMeta) {
       recordAttempt(currentQuestionMeta.string, currentQuestionMeta.fret, true, timeTaken);
@@ -153,6 +163,13 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const handleFailure = useCallback(() => {
     if (isFinished) return;
     
+    // Store the WRONG note that caused the failure to ignore its sustain on the next turn
+    if (detected && detected.pitch) {
+      lastTransitionMidiRef.current = detected.pitch.midi;
+    } else {
+      lastTransitionMidiRef.current = null;
+    }
+
     if (audioEngineRef.current) {
       audioEngineRef.current.playFailureSound();
     }
@@ -176,14 +193,23 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         finishSession();
       }
     }
-  }, [isFinished, settings.timeLimit, currentTargetName, isSequenceMode, currentIdx, questions.length, currentQuestionMeta, nextStep, finishSession, recordAttempt]);
+  }, [isFinished, settings.timeLimit, currentTargetName, isSequenceMode, currentIdx, questions.length, currentQuestionMeta, nextStep, finishSession, recordAttempt, detected]);
 
   const handleAudioProcess = useCallback((stats: AudioStats) => {
     setDetected(stats);
     const isActive = stats.rms >= settings.rmsThreshold;
     
-    // Quick exit if no valid signal
-    if (!stats.pitch || !isActive) {
+    // If silent, we reset the sustain protection because strings were muted
+    if (!isActive) {
+      isIgnoringSustainRef.current = false;
+      lastTransitionMidiRef.current = null;
+      setStabilityCounter(0);
+      stabilityCheckRef.current = null;
+      return;
+    }
+
+    // Quick exit if no valid signal detected
+    if (!stats.pitch) {
       setStabilityCounter(0);
       stabilityCheckRef.current = null;
       return;
@@ -191,19 +217,27 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
 
     const isValid = validateNote(stats.pitch.midi, currentTargetMidi, settings.strictOctave);
     
-    if (isValid) {
-      // If we just validated this MIDI note for a previous step, require a small drop in RMS or a change 
-      // to avoid auto-validating identical adjacent notes in a sequence (e.g. scales)
-      if (lastValidatedMidiRef.current === stats.pitch.midi && isSequenceMode) {
-          return;
-      }
+    // UNIVERSAL SUSTAIN PROTECTION:
+    // If the pitch matches the carry-over from the previous turn (correct or incorrect),
+    // and we haven't broken the lock yet, ignore it for validation and for failure.
+    if (isIgnoringSustainRef.current && stats.pitch.midi === lastTransitionMidiRef.current) {
+      // Don't validate or fail, just wait for new input or silence.
+      // Exception: if the "sustain" happens to be the correct target (e.g. repeated notes),
+      // we still let the user play it, but we require a fresh attack/silence if in sequence mode.
+      if (isValid && isSequenceMode) return;
+      if (!isValid) return;
+    }
 
+    // If we reach here and have a signal, we are no longer ignoring sustain
+    // because either it's the correct target note or a different pitch.
+    isIgnoringSustainRef.current = false;
+
+    if (isValid) {
       if (stabilityCheckRef.current === null) {
         stabilityCheckRef.current = Date.now();
         wrongNoteLockoutRef.current = null;
       } else {
         const elapsed = Date.now() - stabilityCheckRef.current;
-        // Use a faster multiplier for UI feedback
         setStabilityCounter(Math.min(100, (elapsed / (settings.stabilityMs || 30)) * 100));
         if (elapsed >= (settings.stabilityMs || 30)) {
           handleSuccess();
@@ -214,7 +248,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       stabilityCheckRef.current = null;
       
       // If the user plays a wrong note, we allow a tiny grace period before failing
-      // to avoid failing on transient "scrape" noises during finger shifts.
       if (!settings.allowMultipleAttempts) {
         if (wrongNoteLockoutRef.current === null) {
           wrongNoteLockoutRef.current = Date.now();
@@ -222,16 +255,18 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
           handleFailure();
         }
       }
-      
-      // If user plays a different note, clear the "same-note" lock
-      if (lastValidatedMidiRef.current !== stats.pitch.midi) {
-          lastValidatedMidiRef.current = null;
-      }
     }
   }, [currentTargetMidi, settings, handleSuccess, handleFailure, isSequenceMode]);
 
+  const processRef = useRef(handleAudioProcess);
   useEffect(() => {
-    audioEngineRef.current = new AudioEngine(handleAudioProcess);
+    processRef.current = handleAudioProcess;
+  }, [handleAudioProcess]);
+
+  useEffect(() => {
+    const audioProxy = (stats: AudioStats) => processRef.current(stats);
+    audioEngineRef.current = new AudioEngine(audioProxy);
+    
     const startEngine = async () => {
       try {
         await audioEngineRef.current?.start(settings.selectedMicId);
@@ -242,6 +277,12 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     };
     startEngine();
     
+    return () => {
+      if (audioEngineRef.current) audioEngineRef.current.stop();
+    };
+  }, [settings.selectedMicId]);
+
+  useEffect(() => {
     timerRef.current = setInterval(() => {
       if (engineError || isFinished) return;
       setTimeLeft(prev => {
@@ -254,10 +295,9 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     }, 50);
 
     return () => {
-      if (audioEngineRef.current) audioEngineRef.current.stop();
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [handleAudioProcess, settings.selectedMicId, settings.timeLimit, engineError, isFinished, handleFailure]);
+  }, [settings.timeLimit, engineError, isFinished, handleFailure]);
 
   const summaryResult = useMemo(() => {
     if (!isFinished) return null;
@@ -294,7 +334,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
 
   if (isFinished && summaryResult) {
     const showNext = onNext && summaryResult.accuracy >= settings.minUnlockAccuracy;
-
     return (
       <ScoreSummary 
         result={summaryResult} 
@@ -330,7 +369,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         />
       )}
 
-      {/* Primary Target Display */}
       <Box sx={{ 
         display: 'flex', 
         flexDirection: { xs: 'column', sm: 'row' },
@@ -340,7 +378,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         mb: 8, 
         mt: isSequenceMode ? 2 : 6 
       }}>
-        {/* Note section with fixed dimensions */}
         <Box sx={{ textAlign: 'center', width: { xs: 'auto', sm: 220 } }}>
           <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, display: 'block', mb: 1, opacity: 0.8 }}>
             {t.note}
@@ -358,12 +395,11 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
                 whiteSpace: 'nowrap'
               }}
             >
-              {translateNoteName(currentTargetName, settings.noteNaming)}
+              {translateNoteName(currentTargetName, settings.noteNaming).toUpperCase()}
             </Typography>
           </Box>
         </Box>
 
-        {/* String hint section */}
         {!isSequenceMode && questions[currentIdx] && (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Paper 
@@ -372,16 +408,16 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
                 px: 4, 
                 py: 2, 
                 borderRadius: 2, 
-                bgcolor: settings.themeMode === 'dark' ? 'rgba(33, 150, 243, 0.08)' : 'rgba(33, 150, 243, 0.04)',
+                bgcolor: alpha(theme.palette.primary.main, settings.themeMode === 'dark' ? 0.08 : 0.04),
                 color: 'primary.main',
                 border: '1px solid',
-                borderColor: 'rgba(33, 150, 243, 0.2)',
+                borderColor: alpha(theme.palette.primary.main, 0.2),
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 minWidth: { xs: 160, sm: 200 },
-                minHeight: 110, // Match the height of NoteDisplay for alignment if stacked
+                minHeight: 110, 
                 boxShadow: 'none'
               }}
             >
@@ -389,18 +425,17 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
                 {t.pluckString}
               </Typography>
               <Typography variant="h3" sx={{ fontWeight: 900, textAlign: 'center' }}>
-                {translateNoteName(questions[currentIdx].stringName, settings.noteNaming)}
+                {translateNoteName(questions[currentIdx].stringName, settings.noteNaming).toUpperCase()}
               </Typography>
             </Paper>
           </Box>
         )}
       </Box>
 
-      {/* Performance Monitor - Aligned and balanced */}
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'center', 
-        alignItems: 'center', // Center vertically
+        alignItems: 'center', 
         gap: { xs: 3, md: 5 }, 
         flexWrap: 'wrap' 
       }}>
