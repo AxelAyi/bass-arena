@@ -28,6 +28,7 @@ export interface UserSettings {
   noteNaming: 'english' | 'latin';
   language: AppLanguage;
   primaryColor: string;
+  hasSeenWelcome: boolean;
   // Metronome Settings
   metronomeEnabled: boolean;
   metronomeBpm: number;
@@ -62,6 +63,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   noteNaming: 'english',
   language: 'en',
   primaryColor: '#2196f3',
+  hasSeenWelcome: false,
   metronomeEnabled: false,
   metronomeBpm: 100,
   metronomeVolume: 0.5,

@@ -21,6 +21,7 @@ import Settings from './routes/Settings';
 import Theory from './routes/Theory';
 import About from './routes/About';
 import Tuner from './components/Tuner';
+import WelcomeDialog from './components/WelcomeDialog';
 
 // Fix: Extract components/hooks from the casted module object
 const { HashRouter: Router, Routes, Route, Link, useLocation } = ReactRouterDOM as any;
@@ -200,6 +201,7 @@ const App: React.FC = () => {
           <Navigation />
         </Box>
         <Tuner open={tunerOpen} onClose={() => setTunerOpen(false)} />
+        <WelcomeDialog />
       </Router>
     </ThemeProvider>
   );

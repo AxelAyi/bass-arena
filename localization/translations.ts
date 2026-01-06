@@ -2,7 +2,15 @@ import { AppLanguage } from '../state/store';
 
 export const translations: Record<AppLanguage, any> = {
   en: {
-    nav: { program: 'Program', training: 'Training', theory: 'Theory', settings: 'Settings', setup: 'Setup', tuner: 'Tuner', about: 'About' },
+    nav: { program: 'Program', training: 'Training', theory: 'Theory', settings: 'Settings', setup: 'Setup', tuner: 'Afinador', about: 'About' },
+    welcome: {
+      title: 'Welcome to BassArena!',
+      subtitle: 'Prepare your Gear',
+      description: 'To practice your fretboard mastery effectively, we highly recommend using an audio interface (sound card) to plug your bass directly into your computer.',
+      tip: 'Connection Tip',
+      action: 'Once connected, go to the Settings tab to enable your microphone and select the correct input device.',
+      cta: 'Got it, let\'s play!'
+    },
     settings: {
       title: 'Settings',
       audioInput: 'Audio Input',
@@ -40,7 +48,7 @@ export const translations: Record<AppLanguage, any> = {
       resetSuccess: 'All data has been reset.',
       resetConfirmTitle: 'Are you absolutely sure?',
       resetConfirmDesc: 'This will permanently delete your settings, history, and fretboard mastery. This action cannot be undone.',
-      colors: { blue: 'Blue', cyan: 'Cyan', green: 'Green', purple: 'Purple', red: 'Red', grey: 'Grey' }
+      colors: { blue: 'Blue', cyan: 'Cyan', green: 'Green', purple: 'Purple', red: 'Red', grey: 'Dark Grey' }
     },
     program: {
       title: 'Guided Mastery',
@@ -203,6 +211,14 @@ export const translations: Record<AppLanguage, any> = {
   },
   fr: {
     nav: { program: 'Programme', training: 'Entraînement', theory: 'Théorie', settings: 'Paramètres', setup: 'Config', tuner: 'Accordeur', about: 'À Propos' },
+    welcome: {
+      title: 'Bienvenue sur BassArena !',
+      subtitle: 'Préparez votre matériel',
+      description: 'Pour pratiquer efficacement, nous recommandons vivement d\'utiliser une interface audio (carte son) pour brancher votre basse directement à votre ordinateur.',
+      tip: 'Conseil de Connexion',
+      action: 'Une fois connecté, rendez-vous dans l\'onglet Paramètres pour activer votre micro et sélectionner la bonne entrée.',
+      cta: 'C\'est parti, on joue !'
+    },
     settings: {
       title: 'Paramètres',
       audioInput: 'Entrée Audio',
@@ -403,6 +419,14 @@ export const translations: Record<AppLanguage, any> = {
   },
   es: {
     nav: { program: 'Programa', training: 'Entrenamiento', theory: 'Teoría', settings: 'Ajustes', setup: 'Config', tuner: 'Afinador', about: 'Acerca de' },
+    welcome: {
+      title: '¡Bienvenido a BassArena!',
+      subtitle: 'Prepara tu equipo',
+      description: 'Para practicar el dominio del mástil de forma eficaz, te recomendamos encarecidamente que utilices una interfaz de audio (tarjeta de sonido) para conectar el bajo directamente al ordenador.',
+      tip: 'Consejo de conexión',
+      action: 'Una vez conectado, ve a la pestaña Ajustes para activar el micrófono y seleccionar el dispositivo de entrada correcto.',
+      cta: '¡Entendido, a tocar!'
+    },
     settings: {
       title: 'Ajustes',
       audioInput: 'Entrada de Audio',
