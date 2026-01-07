@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Divider, Stack, useTheme, useMediaQuery, MenuItem, Select, FormControl } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -21,8 +22,6 @@ const { useLocation } = ReactRouterDOM as any;
 const FreeTraining: React.FC = () => {
   const { settings, isMicEnabled, mastery } = useStore();
   const theme = useTheme();
-  const isMobile = useMediaQuery((theme as any).breakpoints.down('sm'));
-  const isLarge = useMediaQuery((theme as any).breakpoints.up('lg'));
   const t = translations[settings.language].training;
   const location = useLocation();
   
@@ -34,6 +33,7 @@ const FreeTraining: React.FC = () => {
   const [questions, setQuestions] = useState<FretPosition[]>([]);
   const [sessionTitle, setSessionTitle] = useState(t.title);
   const [micDialogOpen, setMicDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'custom' | 'weak'>('custom');
 
   // Overlay State managed here for shared alignment
   const [scaleType, setScaleType] = useState<ScaleType>('none');
@@ -82,13 +82,18 @@ const FreeTraining: React.FC = () => {
         const pool = getAllPositionsInRanges(fretRange[1], stringIndices).filter(p => p.fret >= fretRange[0]);
         if (pool.length === 0) return;
         
-        let shuffled = [...pool].sort(() => 0.5 - Math.random());
-        let finalQuestions = [...shuffled];
+        const finalQuestions: FretPosition[] = [];
+        let lastMidi: number | null = null;
+        
         while (finalQuestions.length < questionCount) {
-            const more = [...pool].sort(() => 0.5 - Math.random());
-            finalQuestions = [...finalQuestions, ...more];
+          const candidates = pool.filter(p => p.midi !== lastMidi);
+          const source = candidates.length > 0 ? candidates : pool;
+          const pick = source[Math.floor(Math.random() * source.length)];
+          finalQuestions.push(pick);
+          lastMidi = pick.midi;
         }
-        setQuestions(finalQuestions.slice(0, questionCount));
+
+        setQuestions(finalQuestions);
         setSessionTitle(t.title);
     }
     
@@ -96,7 +101,7 @@ const FreeTraining: React.FC = () => {
     setActive(true);
   }, [fretRange, selectedStrings, questionCount, settings.isFiveString, t.title]);
 
-  const handleFixWeakSpots = () => {
+  const startWeakSpotsSession = useCallback(() => {
     const stringIndices = settings.isFiveString ? [0, 1, 2, 3, 4] : [0, 1, 2, 3];
     const fullPool = getAllPositionsInRanges(12, stringIndices);
     
@@ -113,9 +118,19 @@ const FreeTraining: React.FC = () => {
         .filter(item => !item.mastered) 
         .sort((a, b) => b.score - a.score);
 
-    const weakQs = scoredPool.slice(0, 10).map(item => item.pos);
+    const weakItems = scoredPool.slice(0, 20); // Larger sample to filter repeats
+    const finalWeakQs: FretPosition[] = [];
+    let lastMidi: number | null = null;
+
+    for (const item of weakItems) {
+      if (finalWeakQs.length >= 10) break;
+      if (item.pos.midi !== lastMidi) {
+        finalWeakQs.push(item.pos);
+        lastMidi = item.pos.midi;
+      }
+    }
     
-    if (weakQs.length === 0) {
+    if (finalWeakQs.length === 0) {
         const maintenanceQs = fullPool
             .map(pos => ({ pos, stats: mastery[`s${pos.string}f${pos.fret}`] }))
             .sort((a, b) => (a.stats?.lastAttempt || 0) - (b.stats?.lastAttempt || 0))
@@ -125,20 +140,35 @@ const FreeTraining: React.FC = () => {
         return;
     }
 
+    executeSession(finalWeakQs, t.fixWeakSpots);
+  }, [settings.isFiveString, mastery, settings.timeLimit, executeSession, t.fixWeakSpots, t.maintenanceDrill]);
+
+  const handleFixWeakSpots = () => {
     if (isMicEnabled) {
-        executeSession(weakQs, t.fixWeakSpots);
+      startWeakSpotsSession();
     } else {
-        setMicDialogOpen(true);
+      setPendingAction('weak');
+      setMicDialogOpen(true);
     }
   };
 
-  const startSession = useCallback(() => {
+  const startCustomSession = useCallback(() => {
+    executeSession();
+  }, [executeSession]);
+
+  const handleStartCustom = () => {
     if (isMicEnabled) {
-      executeSession();
+      startCustomSession();
     } else {
+      setPendingAction('custom');
       setMicDialogOpen(true);
     }
-  }, [isMicEnabled, executeSession]);
+  };
+
+  const handleMicSuccess = () => {
+    if (pendingAction === 'custom') startCustomSession();
+    else startWeakSpotsSession();
+  };
 
   const availableStrings = ['G', 'D', 'A', 'E'];
   if (settings.isFiveString) {
@@ -163,7 +193,13 @@ const FreeTraining: React.FC = () => {
         questions={questions} 
         title={sessionTitle}
         onFinish={() => setActive(false)} 
-        onReplay={startSession}
+        onReplay={() => {
+            if (sessionTitle === t.fixWeakSpots || sessionTitle === t.maintenanceDrill) {
+                startWeakSpotsSession();
+            } else {
+                startCustomSession();
+            }
+        }}
       />
     );
   }
@@ -238,7 +274,6 @@ const FreeTraining: React.FC = () => {
               spacing={{ xs: 2, lg: 4 }} 
               alignItems={{ xs: 'flex-start', lg: 'center' }} 
             >
-              {/* Pattern Overlays - Integrated and Compact */}
               <Stack direction="row" spacing={3} alignItems="center" sx={{ flexShrink: 0 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                     <LayersIcon fontSize="small" sx={{ color: 'text.secondary', opacity: 0.7 }} />
@@ -286,10 +321,8 @@ const FreeTraining: React.FC = () => {
                 </Stack>
               </Stack>
 
-              {/* Space filler to push stats to the right on large displays */}
               <Box sx={{ display: { xs: 'none', lg: 'block' }, flexGrow: 1 }} />
 
-              {/* Statistics - Compact Row */}
               <Stack 
                 direction="row" 
                 spacing={{ xs: 3, sm: 4 }} 
@@ -344,7 +377,6 @@ const FreeTraining: React.FC = () => {
                 overflow: 'hidden'
               }}
             >
-              {/* Background Decorative Icon */}
               <PsychologyIcon 
                 sx={{ 
                   position: 'absolute', 
@@ -469,7 +501,7 @@ const FreeTraining: React.FC = () => {
                   variant="outlined" 
                   fullWidth 
                   size="large"
-                  onClick={startSession} 
+                  onClick={handleStartCustom} 
                   startIcon={<TrackChangesIcon />} 
                   disabled={availableStrings.every(s => !selectedStrings[s as keyof typeof selectedStrings])}
                   sx={sharedButtonStyles}
@@ -485,7 +517,7 @@ const FreeTraining: React.FC = () => {
       <MicPermissionDialog 
         open={micDialogOpen} 
         onClose={() => setMicDialogOpen(false)} 
-        onSuccess={startSession} 
+        onSuccess={handleMicSuccess} 
       />
     </Box>
   );

@@ -17,6 +17,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ExploreIcon from '@mui/icons-material/Explore';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import TuneIcon from '@mui/icons-material/Tune';
 import { useStore } from '../state/store';
 import { translateTextWithNotes, translateNoteName, NOTE_NAMES_ENGLISH } from '../audio/noteUtils';
 import { translations } from '../localization/translations';
@@ -47,6 +48,7 @@ const Theory: React.FC = () => {
   };
 
   const navItems = [
+    { id: 'detection', label: t.navDetection, icon: <TuneIcon fontSize="small" /> },
     { id: 'basics', label: t.navBasics, icon: <InfoIcon fontSize="small" /> },
     { id: 'reading', label: t.navReading, icon: <LibraryMusicIcon fontSize="small" /> },
     { id: 'geometry', label: t.navGeometry, icon: <NavigationIcon fontSize="small" /> },
@@ -80,10 +82,10 @@ const Theory: React.FC = () => {
         <Typography variant="h5" fontWeight="900" sx={{ letterSpacing: -1 }}>{t.title}</Typography>
       </Box>
 
-      <Grid container spacing={3} alignItems="flex-start">
+      <Grid container spacing={3}>
         {!isMobile && (
           <Grid size={{ md: 3 }}>
-            <Box sx={{ position: 'sticky', top: 80 }}>
+            <Box sx={{ position: 'sticky', top: 84, alignSelf: 'start' }}>
               <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
                 <List component="nav" sx={{ p: 0 }}>
                   <ListItem sx={{ bgcolor: 'primary.main', py: 1.5 }}>
@@ -108,6 +110,33 @@ const Theory: React.FC = () => {
 
         <Grid size={{ xs: 12, md: 9 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <section id="detection">
+              <Paper sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'primary.main' }}>
+                <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TuneIcon /> {t.navDetection}
+                </Typography>
+                <Typography variant="body2" paragraph color="textSecondary">
+                  {t.detectionDesc}
+                </Typography>
+
+                <Grid container spacing={2}>
+                  {[
+                    { icon: <TuneIcon color="primary" />, text: t.tipTuner },
+                    { icon: <InfoIcon color="primary" />, text: t.tipVolume },
+                    { icon: <LibraryMusicIcon color="primary" />, text: t.tipMuting },
+                    { icon: <LightbulbIcon color="primary" />, text: t.tipNoise },
+                  ].map((tip, idx) => (
+                    <Grid size={{ xs: 12, sm: 6 }} key={idx}>
+                      <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2, border: '1px solid divider', height: '100%', display: 'flex', gap: 2 }}>
+                        <Box sx={{ mt: 0.5 }}>{tip.icon}</Box>
+                        <Typography variant="body2" sx={{ lineHeight: 1.6 }}>{tip.text}</Typography>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Paper>
+            </section>
+
             <section id="basics">
               <Paper sx={{ p: 3, borderRadius: 2 }}>
                 <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2 }}>{t.navBasics}</Typography>

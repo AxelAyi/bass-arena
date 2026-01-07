@@ -126,62 +126,69 @@ const FretboardHeatmap: React.FC<FretboardHeatmapProps> = ({
                     </Box>
                 ) : t.notPracticed;
 
+                // Fix: Explicitly pass children prop to Tooltip to resolve TypeScript "children missing" error
+                // when standard JSX children syntax fails to be correctly parsed as a property.
                 return (
-                  <Tooltip key={f} title={tooltipContent} arrow>
-                    <Box 
-                      onClick={() => !isReadOnly && onSelectPosition?.(sIdx, f)}
-                      sx={{ 
-                        flex: 1, 
-                        height: 32, 
-                        bgcolor: color,
-                        m: 0.25,
-                        borderRadius: 0.5,
-                        cursor: isReadOnly ? 'default' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        border: '1px solid',
-                        borderColor: isHighlighted 
-                          ? (isDarkMode ? 'primary.main' : 'primary.dark') 
-                          : (isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'),
-                        boxShadow: isHighlighted ? `0 0 8px ${theme.palette.primary.main}${isDarkMode ? '40' : '60'}` : 'none',
-                        zIndex: isHighlighted ? 1 : 0,
-                        transition: isReadOnly ? 'none' : 'transform 0.1s, border-color 0.1s',
-                        '&:hover': !isReadOnly ? {
-                            transform: 'scale(1.2)',
-                            zIndex: 2,
-                            borderColor: isDarkMode ? 'primary.main' : 'primary.dark',
-                            boxShadow: theme.shadows[4]
-                        } : {}
-                      }}
-                    >
-                        {isHighlighted && info.noteName === rootNote && (
-                          <FlareIcon 
+                  <Tooltip 
+                    key={f} 
+                    title={tooltipContent} 
+                    arrow
+                    children={
+                      <Box 
+                        onClick={() => !isReadOnly && onSelectPosition?.(sIdx, f)}
+                        sx={{ 
+                          flex: 1, 
+                          height: 32, 
+                          bgcolor: color,
+                          m: 0.25,
+                          borderRadius: 0.5,
+                          cursor: isReadOnly ? 'default' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative',
+                          border: '1px solid',
+                          borderColor: isHighlighted 
+                            ? (isDarkMode ? 'primary.main' : 'primary.dark') 
+                            : (isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'),
+                          boxShadow: isHighlighted ? `0 0 8px ${theme.palette.primary.main}${isDarkMode ? '40' : '60'}` : 'none',
+                          zIndex: isHighlighted ? 1 : 0,
+                          transition: isReadOnly ? 'none' : 'transform 0.1s, border-color 0.1s',
+                          '&:hover': !isReadOnly ? {
+                              transform: 'scale(1.2)',
+                              zIndex: 2,
+                              borderColor: isDarkMode ? 'primary.main' : 'primary.dark',
+                              boxShadow: theme.shadows[4]
+                          } : {}
+                        }}
+                      >
+                          {isHighlighted && info.noteName === rootNote && (
+                            <FlareIcon 
+                              sx={{ 
+                                position: 'absolute', 
+                                top: -4, 
+                                right: -4, 
+                                fontSize: '0.8rem', 
+                                color: 'primary.main',
+                                filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))'
+                              }} 
+                            />
+                          )}
+                          <Typography 
+                            variant="caption" 
                             sx={{ 
-                              position: 'absolute', 
-                              top: -4, 
-                              right: -4, 
-                              fontSize: '0.8rem', 
-                              color: 'primary.main',
-                              filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))'
-                            }} 
-                          />
-                        )}
-                        <Typography 
-                          variant="caption" 
-                          sx={{ 
-                            fontSize: '0.65rem', 
-                            color: textColor, 
-                            fontWeight: isHighlighted ? 900 : 800,
-                            pointerEvents: 'none',
-                            opacity: (scaleType !== 'none' && !isHighlighted) ? 0.15 : 1,
-                          }}
-                        >
-                            {translateNoteName(info.noteName, settings.noteNaming)}
-                        </Typography>
-                    </Box>
-                  </Tooltip>
+                              fontSize: '0.65rem', 
+                              color: textColor, 
+                              fontWeight: isHighlighted ? 900 : 800,
+                              pointerEvents: 'none',
+                              opacity: (scaleType !== 'none' && !isHighlighted) ? 0.15 : 1,
+                            }}
+                          >
+                              {translateNoteName(info.noteName, settings.noteNaming)}
+                          </Typography>
+                      </Box>
+                    }
+                  />
                 );
               })}
             </Box>

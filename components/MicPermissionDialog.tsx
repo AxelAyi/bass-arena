@@ -14,7 +14,7 @@ interface MicPermissionDialogProps {
 }
 
 const MicPermissionDialog: React.FC<MicPermissionDialogProps> = ({ open, onClose, onSuccess }) => {
-  const { settings, setMicEnabled } = useStore();
+  const { settings, setMicEnabled, updateSettings } = useStore();
   const t = translations[settings.language].mic;
   
   const [loading, setLoading] = useState(false);
@@ -25,6 +25,15 @@ const MicPermissionDialog: React.FC<MicPermissionDialogProps> = ({ open, onClose
     setLoading(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Reflect the value selected in the browser's prompt back into our settings
+      const activeTrack = stream.getAudioTracks()[0];
+      const activeDeviceId = activeTrack.getSettings().deviceId;
+      
+      if (activeDeviceId) {
+        updateSettings({ selectedMicId: activeDeviceId });
+      }
+
       stream.getTracks().forEach(track => track.stop());
       
       setMicEnabled(true);

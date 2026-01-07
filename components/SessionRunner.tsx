@@ -1,4 +1,5 @@
-import { Box, Typography, IconButton, Container, CircularProgress, Alert, Paper, Stack, useTheme } from '@mui/material';
+
+import { Box, Typography, IconButton, Container, CircularProgress, Alert, Paper, Stack, useTheme, Fade } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -43,6 +44,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const theme = useTheme();
   const t = translations[settings.language].session;
   
+  const [countdown, setCountdown] = useState<number | 'GO' | null>(3);
   const [currentIdx, setCurrentIdx] = useState(0); 
   const [sequenceIdx, setSequenceIdx] = useState(0); 
   const [score, setScore] = useState(0);
@@ -62,10 +64,10 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const stabilityCheckRef = useRef<number | null>(null);
   const wrongNoteLockoutRef = useRef<number | null>(null);
   
-  // Track the note that was playing when we transitioned questions (ringing sustain)
+  // Advanced transition and mute protection
   const lastTransitionMidiRef = useRef<number | null>(null);
-  // Track if we are currently ignoring the sustain of that note
-  const isIgnoringSustainRef = useRef<boolean>(false);
+  const isWaitingForNewAttackRef = useRef<boolean>(false);
+  const lastRmsRef = useRef<number>(0);
 
   const isSequenceMode = !!sequence && sequence.length > 0;
   
@@ -116,8 +118,8 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     stabilityCheckRef.current = null;
     wrongNoteLockoutRef.current = null;
     
-    // Flag that the new question starts by ignoring whatever was just heard
-    isIgnoringSustainRef.current = true;
+    // We are now waiting for a clean new pluck or silence
+    isWaitingForNewAttackRef.current = true;
 
     if (isSequenceMode && sequence) {
       if (sequenceIdx < sequence.length - 1) {
@@ -138,8 +140,9 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     if (isFinished) return;
     const timeTaken = (Date.now() - questionStartTimeRef.current) / 1000;
     
-    // Store whatever note just gave us the win so we can ignore its ringing sustain
-    lastTransitionMidiRef.current = currentTargetMidi;
+    if (detected && detected.pitch) {
+      lastTransitionMidiRef.current = detected.pitch.midi;
+    }
 
     if (currentQuestionMeta) {
       recordAttempt(currentQuestionMeta.string, currentQuestionMeta.fret, true, timeTaken);
@@ -158,16 +161,13 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     } else {
       finishSession();
     }
-  }, [isFinished, isSequenceMode, sequence, sequenceIdx, currentIdx, questions.length, currentTargetName, currentTargetMidi, currentQuestionMeta, nextStep, finishSession, recordAttempt]);
+  }, [isFinished, isSequenceMode, sequence, sequenceIdx, currentIdx, questions.length, currentTargetName, currentQuestionMeta, nextStep, finishSession, recordAttempt, detected]);
 
   const handleFailure = useCallback(() => {
     if (isFinished) return;
     
-    // Store the WRONG note that caused the failure to ignore its sustain on the next turn
     if (detected && detected.pitch) {
       lastTransitionMidiRef.current = detected.pitch.midi;
-    } else {
-      lastTransitionMidiRef.current = null;
     }
 
     if (audioEngineRef.current) {
@@ -196,43 +196,58 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   }, [isFinished, settings.timeLimit, currentTargetName, isSequenceMode, currentIdx, questions.length, currentQuestionMeta, nextStep, finishSession, recordAttempt, detected]);
 
   const handleAudioProcess = useCallback((stats: AudioStats) => {
+    if (countdown !== null || isFinished) return; 
     setDetected(stats);
-    const isActive = stats.rms >= settings.rmsThreshold;
     
-    // If silent, we reset the sustain protection because strings were muted
+    const isActive = stats.rms >= settings.rmsThreshold;
+    const prevRms = lastRmsRef.current;
+    lastRmsRef.current = stats.rms;
+
+    // Reset logic: if it goes silent, we are definitely ready for a new note
     if (!isActive) {
-      isIgnoringSustainRef.current = false;
+      isWaitingForNewAttackRef.current = false;
       lastTransitionMidiRef.current = null;
       setStabilityCounter(0);
       stabilityCheckRef.current = null;
+      wrongNoteLockoutRef.current = null;
       return;
     }
 
-    // Quick exit if no valid signal detected
+    // Protection against mute "thuds" or "vibrations"
+    // If we are waiting for a new attack, we ignore all data until we see a significant volume jump
+    if (isWaitingForNewAttackRef.current) {
+      // 1.8x volume jump indicates a clear new pluck (attack)
+      const isNewAttack = stats.rms > prevRms * 1.8;
+      // Also check if the pitch has actually changed significantly (user shifted)
+      const pitchShifted = stats.pitch && lastTransitionMidiRef.current !== null && 
+                          Math.abs(stats.pitch.midi - lastTransitionMidiRef.current) > 0.8;
+
+      if (isNewAttack || pitchShifted) {
+        isWaitingForNewAttackRef.current = false;
+      } else {
+        // Still vibrating or muting previous note
+        return;
+      }
+    }
+
     if (!stats.pitch) {
       setStabilityCounter(0);
       stabilityCheckRef.current = null;
       return;
     }
 
+    // Protection against decay artifacts: 
+    // Stability shouldn't start or increase if the volume is dropping sharply (likely a mute/decay)
+    const isDecaying = stats.rms < prevRms * 0.95;
+    
     const isValid = validateNote(stats.pitch.midi, currentTargetMidi, settings.strictOctave);
     
-    // UNIVERSAL SUSTAIN PROTECTION:
-    // If the pitch matches the carry-over from the previous turn (correct or incorrect),
-    // and we haven't broken the lock yet, ignore it for validation and for failure.
-    if (isIgnoringSustainRef.current && stats.pitch.midi === lastTransitionMidiRef.current) {
-      // Don't validate or fail, just wait for new input or silence.
-      // Exception: if the "sustain" happens to be the correct target (e.g. repeated notes),
-      // we still let the user play it, but we require a fresh attack/silence if in sequence mode.
-      if (isValid && isSequenceMode) return;
-      if (!isValid) return;
-    }
-
-    // If we reach here and have a signal, we are no longer ignoring sustain
-    // because either it's the correct target note or a different pitch.
-    isIgnoringSustainRef.current = false;
-
     if (isValid) {
+      // If signal is decaying, we are suspicious of this stability
+      if (isDecaying && stabilityCheckRef.current === null) {
+        return; 
+      }
+
       if (stabilityCheckRef.current === null) {
         stabilityCheckRef.current = Date.now();
         wrongNoteLockoutRef.current = null;
@@ -247,23 +262,45 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       setStabilityCounter(0);
       stabilityCheckRef.current = null;
       
-      // If the user plays a wrong note, we allow a tiny grace period before failing
       if (!settings.allowMultipleAttempts) {
+        // Don't trigger failure on sharp decay (mute artifact)
+        if (isDecaying && wrongNoteLockoutRef.current === null) {
+          return;
+        }
+
         if (wrongNoteLockoutRef.current === null) {
           wrongNoteLockoutRef.current = Date.now();
-        } else if (Date.now() - wrongNoteLockoutRef.current > 60) { // 60ms grace
+        } else if (Date.now() - wrongNoteLockoutRef.current > 250) { 
+          // 250ms lockout for transition stability
           handleFailure();
         }
       }
     }
-  }, [currentTargetMidi, settings, handleSuccess, handleFailure, isSequenceMode]);
+  }, [currentTargetMidi, settings, handleSuccess, handleFailure, countdown, isFinished]);
 
   const processRef = useRef(handleAudioProcess);
   useEffect(() => {
     processRef.current = handleAudioProcess;
   }, [handleAudioProcess]);
 
+  // Countdown timer effect
   useEffect(() => {
+    if (countdown === null) return;
+    const timer = setTimeout(() => {
+      if (countdown === 3) setCountdown(2);
+      else if (countdown === 2) setCountdown(1);
+      else if (countdown === 1) setCountdown('GO');
+      else if (countdown === 'GO') {
+        setCountdown(null);
+        questionStartTimeRef.current = Date.now(); 
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  useEffect(() => {
+    if (countdown !== null) return; 
+
     const audioProxy = (stats: AudioStats) => processRef.current(stats);
     audioEngineRef.current = new AudioEngine(audioProxy);
     
@@ -280,9 +317,11 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     return () => {
       if (audioEngineRef.current) audioEngineRef.current.stop();
     };
-  }, [settings.selectedMicId]);
+  }, [settings.selectedMicId, countdown]);
 
   useEffect(() => {
+    if (countdown !== null) return; 
+
     timerRef.current = setInterval(() => {
       if (engineError || isFinished) return;
       setTimeLeft(prev => {
@@ -297,7 +336,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [settings.timeLimit, engineError, isFinished, handleFailure]);
+  }, [settings.timeLimit, engineError, isFinished, handleFailure, countdown]);
 
   const summaryResult = useMemo(() => {
     if (!isFinished) return null;
@@ -345,7 +384,58 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 2 }}>
+    <Container maxWidth="md" sx={{ py: 2, position: 'relative', minHeight: '80vh' }}>
+      {/* Countdown Overlay */}
+      {countdown !== null && (
+        <Box 
+          sx={{ 
+            position: 'absolute', 
+            inset: 0, 
+            zIndex: 100, 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            bgcolor: alpha(theme.palette.background.default, 0.8),
+            backdropFilter: 'blur(12px)',
+            borderRadius: 2
+          }}
+        >
+          <Typography 
+            variant="subtitle1" 
+            color="primary" 
+            sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2, mb: 2 }}
+          >
+            {t.getReady}
+          </Typography>
+          <Box 
+            sx={{ 
+              width: 160, 
+              height: 160, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              border: '4px solid',
+              borderColor: 'primary.main',
+              borderRadius: '50%'
+            }}
+          >
+            <Fade key={countdown} in={true} timeout={300}>
+              <Typography 
+                variant="h1" 
+                sx={{ 
+                  fontWeight: 900, 
+                  fontSize: countdown === 'GO' ? '4rem' : '6rem', 
+                  color: countdown === 'GO' ? 'success.main' : 'primary.main' 
+                }}
+              >
+                {countdown === 'GO' ? t.go : countdown}
+              </Typography>
+            </Fade>
+          </Box>
+        </Box>
+      )}
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
         <Box>
           <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{title}</Typography>
@@ -376,7 +466,8 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         justifyContent: 'center', 
         gap: { xs: 4, sm: 8 }, 
         mb: 8, 
-        mt: isSequenceMode ? 2 : 6 
+        mt: isSequenceMode ? 2 : 6,
+        visibility: countdown !== null ? 'hidden' : 'visible' 
       }}>
         <Box sx={{ textAlign: 'center', width: { xs: 'auto', sm: 220 } }}>
           <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, display: 'block', mb: 1, opacity: 0.8 }}>

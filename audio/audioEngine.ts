@@ -9,6 +9,7 @@ export interface AudioStats {
 }
 
 export class AudioEngine {
+  private static failureBufferCache: AudioBuffer | null = null;
   private audioContext: AudioContext | null = null;
   private stream: MediaStream | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
@@ -16,12 +17,24 @@ export class AudioEngine {
   private filter: BiquadFilterNode | null = null;
   private onProcess: (stats: AudioStats) => void;
 
-  // Increased to 4096 for better low-frequency resolution (Low B is ~31Hz)
-  // This gives the YIN algorithm enough "width" to see multiple periods of a low wave.
   private bufferSize = 4096; 
 
   constructor(onProcess: (stats: AudioStats) => void) {
     this.onProcess = onProcess;
+  }
+
+  private async loadFailureSound() {
+    if (!this.audioContext || AudioEngine.failureBufferCache) return;
+    
+    try {
+      const response = await fetch('failure.mp3');
+      if (!response.ok) throw new Error('Sound file not found');
+      const arrayBuffer = await response.arrayBuffer();
+      // Use the instance audioContext to decode
+      AudioEngine.failureBufferCache = await this.audioContext.decodeAudioData(arrayBuffer);
+    } catch (err) {
+      console.warn("AudioEngine: failure.mp3 could not be loaded.", err);
+    }
   }
 
   async start(deviceId?: string): Promise<AudioContext | null> {
@@ -48,10 +61,11 @@ export class AudioEngine {
         await this.audioContext.resume();
       }
 
+      // Preload (uses cache internally)
+      await this.loadFailureSound();
+
       this.source = this.audioContext.createMediaStreamSource(this.stream);
 
-      // Low-pass set to 350Hz. This kills harmonics and focuses strictly on the bass fundamentals.
-      // Even high notes on the G string (e.g. 24th fret G4) are ~392Hz, so 350-400 is the ideal range.
       this.filter = this.audioContext.createBiquadFilter();
       this.filter.type = 'lowpass';
       this.filter.frequency.value = 350; 
@@ -70,8 +84,6 @@ export class AudioEngine {
         
         const inputData = e.inputBuffer.getChannelData(0);
         const rms = calculateRMS(inputData);
-        
-        // Slightly lower threshold (0.1) to allow YIN to be more persistent with low-energy waves
         const pitchFreq = detectPitchYIN(inputData, this.audioContext.sampleRate, 0.1);
         const pitch = pitchFreq ? frequencyToNote(pitchFreq) : null;
         
@@ -95,23 +107,20 @@ export class AudioEngine {
   }
 
   playFailureSound() {
-    if (!this.audioContext || this.audioContext.state === 'closed') return;
+    if (!this.audioContext || !AudioEngine.failureBufferCache || this.audioContext.state === 'closed') {
+      return;
+    }
 
-    const osc = this.audioContext.createOscillator();
-    const gain = this.audioContext.createGain();
-
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(110, this.audioContext.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, this.audioContext.currentTime + 0.4);
-
-    gain.gain.setValueAtTime(0.08, this.audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.4);
-
-    osc.connect(gain);
-    gain.connect(this.audioContext.destination);
-
-    osc.start();
-    osc.stop(this.audioContext.currentTime + 0.4);
+    const source = this.audioContext.createBufferSource();
+    source.buffer = AudioEngine.failureBufferCache;
+    
+    const gainNode = this.audioContext.createGain();
+    gainNode.gain.setValueAtTime(0.5, this.audioContext.currentTime);
+    
+    source.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    
+    source.start(0);
   }
 
   async stop() {
@@ -135,5 +144,6 @@ export class AudioEngine {
       }
       this.audioContext = null;
     }
+    // DO NOT clear AudioEngine.failureBufferCache here so it persists
   }
 }

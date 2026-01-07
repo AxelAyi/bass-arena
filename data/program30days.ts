@@ -33,13 +33,13 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     day: 1, 
     title: "Open Strings Awareness", 
     description: "Identify and play the open strings. Focus on the core tuning of your instrument.", 
-    title_fr: "Connaissance des cordes à vide",
+    title_fr: "Conscience des cordes à vide",
     description_fr: "Identifiez et jouez les cordes à vide. Concentrez-vous sur l'accordage de base.",
     title_es: "Conciencia de cuerdas al aire",
     description_es: "Identifica y toca las cuerdas al aire. Concéntrate en la afinación básica.",
     strings: [E, A, D, G, B], 
     fretRange: [0, 0],
-    questionCount: 10
+    questionCount: 12
   },
 
   // --- PHASE 2: FIRST POSITION (0-5) - ONE STRING ---
@@ -465,7 +465,7 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     day: 35, 
     title: "Natural Notes Everywhere (0-12)", 
     description: "Identify C, D, E, F, G, A, B anywhere on the neck up to fret 12.", 
-    title_fr: "Notes naturelles partout (0-12)",
+    title_fr: "Notes Naturelles Partout (0-12)",
     description_fr: "Identifiez Do, Ré, Mi, Fa, Sol, La, Si partout jusqu'à la 12ème frette.",
     title_es: "Notas Naturales en Todo el Mástil (0-12)",
     description_es: "Identifica Do, Re, Mi, Fa, Sol, La, Si en todo el mástil hasta el traste 12.",
@@ -478,7 +478,7 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     day: 36, 
     title: "Sharp & Flat Challenge (0-12)", 
     description: "Focus exclusively on accidentals across all strings.", 
-    title_fr: "Les dièses & bémols (0-12)",
+    title_fr: "Défi Dièses & Bémols (0-12)",
     description_fr: "Concentrez-vous exclusivement sur les altérations sur toutes les cordes.",
     title_es: "Desafío de Sostenidos y Bemoles (0-12)",
     description_es: "Concéntrate exclusivamente en las alteraciones en todas las cuerdas.",

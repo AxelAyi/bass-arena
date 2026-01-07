@@ -1,7 +1,7 @@
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-// Fix: Use module import to bypass named export type check
 import * as ReactRouterDOM from 'react-router-dom';
 import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -11,27 +11,28 @@ import { PROGRAMS, DayTask } from '../data/program30days';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
 import SessionRunner from '../components/SessionRunner';
+import MicPermissionDialog from '../components/MicPermissionDialog';
 import { getAllPositionsInRanges, FretPosition } from '../data/fretboard';
 import { translateTextWithNotes } from '../audio/noteUtils';
 
-// Fix: Extract useLocation from module via casting
 const { useLocation } = ReactRouterDOM as any;
 
 interface ActiveTaskInfo {
   task: DayTask;
   questions: FretPosition[];
   title: string;
-  onNext?: { label: string; action: () => void };
 }
 
 const Program: React.FC = () => {
-  const { history, settings, activeProgramId, setActiveProgramId } = useStore();
+  const { history, settings, activeProgramId, setActiveProgramId, isMicEnabled } = useStore();
   const t = translations[settings.language].program;
   const location = useLocation();
   
   const [activeTask, setActiveTask] = useState<ActiveTaskInfo | null>(null);
   const [sessionKey, setSessionKey] = useState(0); 
   const [error, setError] = useState<string | null>(null);
+  const [micDialogOpen, setMicDialogOpen] = useState(false);
+  const [pendingTask, setPendingTask] = useState<DayTask | null>(null);
 
   useEffect(() => {
     setActiveTask(null);
@@ -143,45 +144,61 @@ const Program: React.FC = () => {
     if (filteredPool.length === 0) return [];
 
     const targetCount = task.questionCount || 10;
-    let finalQuestions: FretPosition[] = [];
-    
-    const shuffledPool = [...filteredPool].sort(() => 0.5 - Math.random());
-    finalQuestions = [...shuffledPool];
+    const finalQuestions: FretPosition[] = [];
+    let lastMidi: number | null = null;
 
     while (finalQuestions.length < targetCount) {
-      const more = [...filteredPool].sort(() => 0.5 - Math.random());
-      finalQuestions = [...finalQuestions, ...more];
+      const candidates = filteredPool.filter(p => p.midi !== lastMidi);
+      const source = candidates.length > 0 ? candidates : filteredPool;
+      const pick = source[Math.floor(Math.random() * source.length)];
+      
+      finalQuestions.push(pick);
+      lastMidi = pick.midi;
     }
 
-    return finalQuestions.slice(0, targetCount);
+    return finalQuestions;
   }, [settings.isFiveString]);
+
+  const startActualTask = useCallback((task: DayTask) => {
+    const qs = generateQuestions(task);
+    const taskTitle = sanitizeText(task, 'title');
+    
+    if (qs.length === 0 && !task.sequence) {
+      setError(t.noNotesError);
+      return;
+    }
+
+    setActiveTask({ 
+      task, 
+      questions: qs, 
+      title: taskTitle
+    });
+    setSessionKey(prev => prev + 1);
+  }, [generateQuestions, sanitizeText, t.noNotesError]);
 
   const handleStartTask = useCallback((task: DayTask, force: boolean = false) => {
     const taskIndex = filteredDays.findIndex(d => d.day === task.day);
     if (force || isTaskUnlocked(taskIndex)) {
-      const qs = generateQuestions(task);
-      const taskTitle = sanitizeText(task, 'title');
-      
-      if (qs.length === 0 && !task.sequence) {
-        setError(t.noNotesError);
-        return;
+      // If force is true, we bypass the mic check as well
+      if (!isMicEnabled && !force) {
+        setPendingTask(task);
+        setMicDialogOpen(true);
+      } else {
+        startActualTask(task);
       }
-
-      const nextTask = filteredDays[taskIndex + 1];
-      const onNext = nextTask ? {
-        label: sanitizeText(nextTask, 'title'),
-        action: () => handleStartTask(nextTask, true) 
-      } : undefined;
-
-      setActiveTask({ 
-        task, 
-        questions: qs, 
-        title: taskTitle,
-        onNext 
-      });
-      setSessionKey(prev => prev + 1);
     }
-  }, [isTaskUnlocked, generateQuestions, sanitizeText, t.noNotesError, filteredDays]);
+  }, [isTaskUnlocked, isMicEnabled, filteredDays, startActualTask]);
+
+  const nextTaskData = useMemo(() => {
+    if (!activeTask) return null;
+    const currentIdx = filteredDays.findIndex(d => d.day === activeTask.task.day);
+    const nextTask = filteredDays[currentIdx + 1];
+    if (!nextTask) return null;
+    return {
+      label: sanitizeText(nextTask, 'title'),
+      action: () => handleStartTask(nextTask, true)
+    };
+  }, [activeTask, filteredDays, sanitizeText, handleStartTask]);
 
   if (activeTask) {
     return (
@@ -193,7 +210,7 @@ const Program: React.FC = () => {
         day={activeTask.task.day}
         programId={activeProgramId}
         onReplay={() => handleStartTask(activeTask.task, true)}
-        onNext={activeTask.onNext}
+        onNext={nextTaskData || undefined}
         sequence={activeTask.task.sequence}
       />
     );
@@ -326,6 +343,11 @@ const Program: React.FC = () => {
       <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
         <Alert onClose={() => setError(null)} severity="error" variant="filled" sx={{ width: '100%' }}>{error}</Alert>
       </Snackbar>
+      <MicPermissionDialog 
+        open={micDialogOpen} 
+        onClose={() => setMicDialogOpen(false)} 
+        onSuccess={() => pendingTask && handleStartTask(pendingTask, true)} 
+      />
     </Box>
   );
 };

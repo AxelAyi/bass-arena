@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-// Added Stack to the MUI imports to fix "Cannot find name 'Stack'" errors
-import { Box, Typography, Paper, Slider, Switch, FormControlLabel, Divider, FormGroup, Select, MenuItem, FormControl, InputLabel, ButtonBase, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Stack } from '@mui/material';
+import { Box, Typography, Paper, Slider, Switch, FormControlLabel, Divider, FormGroup, Select, MenuItem, FormControl, InputLabel, ButtonBase, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Stack, alpha } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import CheckIcon from '@mui/icons-material/Check';
 import MicIcon from '@mui/icons-material/Mic';
@@ -16,7 +15,7 @@ import { AudioEngine, AudioStats } from '../audio/audioEngine';
 import VuMeter from '../components/VuMeter';
 
 const Settings: React.FC = () => {
-  const { settings, history, mastery, activeProgramId, updateSettings, isMicEnabled, importState, resetStore } = useStore();
+  const { settings, history, mastery, activeProgramId, updateSettings, isMicEnabled, setMicEnabled, importState, resetStore } = useStore();
   const t = translations[settings.language].settings;
   const ts = translations[settings.language].session;
 
@@ -45,7 +44,6 @@ const Settings: React.FC = () => {
     updateSettings({ language: newLang, noteNaming });
   };
 
-  // The grey value here is used as a selection key; the actual theme value is shifted in App.tsx
   const colorOptions = [
     { name: 'Blue', value: '#2196f3' },
     { name: 'Cyan', value: '#00bcd4' },
@@ -110,15 +108,31 @@ const Settings: React.FC = () => {
       } catch (err) {
         setSnackbar({ open: true, message: t.importError, severity: 'error' });
       }
-      e.target.value = ''; // Reset input
+      e.target.value = ''; 
     };
     reader.readAsText(file);
   };
 
-  const handleConfirmReset = () => {
+  const handleConfirmReset = async () => {
+    const wasMicEnabled = isMicEnabled;
     resetStore();
     setResetDialogOpen(false);
     setSnackbar({ open: true, message: t.resetSuccess, severity: 'info' });
+
+    if (wasMicEnabled) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const activeTrack = stream.getAudioTracks()[0];
+        const activeDeviceId = activeTrack.getSettings().deviceId;
+        if (activeDeviceId) {
+          updateSettings({ selectedMicId: activeDeviceId });
+        }
+        stream.getTracks().forEach(track => track.stop());
+        setMicEnabled(true);
+      } catch (e) {
+        setMicEnabled(false);
+      }
+    }
   };
 
   useEffect(() => {
@@ -153,7 +167,7 @@ const Settings: React.FC = () => {
         <SettingsIcon color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
         <Typography variant="h5" fontWeight="900" sx={{ letterSpacing: -1 }}>{t.title}</Typography>
       </Box>
-      
+
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -185,11 +199,6 @@ const Settings: React.FC = () => {
                 {isTesting ? (
                   <Box sx={{ mt: 2 }}>
                     <VuMeter rms={testStats?.rms || 0} threshold={settings.rmsThreshold} />
-                    {testStats?.activeDeviceLabel && (
-                      <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
-                        {ts.active}: {testStats.activeDeviceLabel}
-                      </Typography>
-                    )}
                     <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>
                       {t.noteLabel}: {shouldDisplayNote ? `${testStats.pitch!.noteName}${testStats.pitch!.octave}` : '--'}
                     </Typography>
@@ -237,8 +246,8 @@ const Settings: React.FC = () => {
               
               <FormGroup>
                 <FormControlLabel control={<Switch checked={settings.themeMode === 'dark'} onChange={toggleTheme} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.darkMode}</Typography>} />
-                <FormControlLabel control={<Switch checked={settings.isFiveString} onChange={handleSwitch('isFiveString')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.fiveString}</Typography>} />
-                <FormControlLabel control={<Switch checked={settings.allowMultipleAttempts} onChange={handleSwitch('allowMultipleAttempts')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.multipleAttempts}</Typography>} />
+                <FormControlLabel control={<Switch checked={settings.isFiveString} onChange={handleSwitch('isFiveString')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.fiveString}</Typography>} labelPlacement="end" />
+                <FormControlLabel control={<Switch checked={settings.allowMultipleAttempts} onChange={handleSwitch('allowMultipleAttempts')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.multipleAttempts}</Typography>} labelPlacement="end" />
               </FormGroup>
             </Paper>
           </Box>
@@ -318,17 +327,16 @@ const Settings: React.FC = () => {
               </Box>
               
               <FormGroup>
-                <FormControlLabel control={<Switch checked={settings.unlockAllExercises} onChange={handleSwitch('unlockAllExercises')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.unlockAllExercises}</Typography>} />
-                <FormControlLabel control={<Switch checked={settings.strictOctave} onChange={handleSwitch('strictOctave')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.strictOctave}</Typography>} />
-                <FormControlLabel control={<Switch checked={settings.showFretNumber} onChange={handleSwitch('showFretNumber')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.showFret}</Typography>} />
-                <FormControlLabel control={<Switch checked={settings.lockString} onChange={handleSwitch('lockString')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.validateString}</Typography>} />
+                <FormControlLabel control={<Switch checked={settings.unlockAllExercises} onChange={handleSwitch('unlockAllExercises')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.unlockAllExercises}</Typography>} labelPlacement="end" />
+                <FormControlLabel control={<Switch checked={settings.strictOctave} onChange={handleSwitch('strictOctave')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.strictOctave}</Typography>} labelPlacement="end" />
+                <FormControlLabel control={<Switch checked={settings.showFretNumber} onChange={handleSwitch('showFretNumber')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.showFret}</Typography>} labelPlacement="end" />
+                <FormControlLabel control={<Switch checked={settings.lockString} onChange={handleSwitch('lockString')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.validateString}</Typography>} labelPlacement="end" />
               </FormGroup>
             </Paper>
 
             <Paper sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="subtitle1" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.dataManagement}</Typography>
               <Divider sx={{ mb: 2 }} />
-              {/* Stack added to the imports above to resolve reference errors */}
               <Stack direction="column" spacing={2}>
                 <Button 
                   variant="outlined" 
@@ -369,7 +377,6 @@ const Settings: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Confirmation Dialog for Reset */}
       <Dialog
         open={resetDialogOpen}
         onClose={() => setResetDialogOpen(false)}
