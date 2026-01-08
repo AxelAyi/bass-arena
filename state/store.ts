@@ -45,6 +45,7 @@ export interface SessionResult {
   avgTime: number;
   day?: number;
   programId: string;
+  wasBeginnerMode?: boolean;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {

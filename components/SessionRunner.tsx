@@ -304,9 +304,10 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       accuracy: totalQuestionsAsked > 0 ? (correctAnswers / totalQuestionsAsked) * 100 : 0,
       avgTime,
       day,
-      programId
+      programId,
+      wasBeginnerMode: settings.beginnerMode
     });
-  }, [questions.length, sequence?.length, day, programId, isSequenceMode, addSessionResult]);
+  }, [questions.length, sequence?.length, day, programId, isSequenceMode, addSessionResult, settings.beginnerMode]);
 
   const nextStep = useCallback(() => {
     setTimeLeft(settings.timeLimit);
@@ -524,11 +525,10 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
 
   const summaryResult = useMemo(() => {
     if (!isFinished) return null;
-    // Fix: Removed unused and incorrect reference to window.resultsRefCurrent which caused a TypeScript error.
-    // Note: Re-using the logic from the state-based resultsRef
+    const finalResults = resultsRef.current;
     const totalExpected = isSequenceMode ? sequence?.length || 1 : questions.length;
-    const correctAnswers = resultsRef.current.filter(r => r.correct).length;
-    const avgTime = resultsRef.current.reduce((acc, r) => acc + r.time, 0) / (resultsRef.current.length || 1);
+    const correctAnswers = finalResults.filter(r => r.correct).length;
+    const avgTime = finalResults.reduce((acc, r) => acc + r.time, 0) / (finalResults.length || 1);
     
     return {
       date: new Date().toISOString(),
@@ -537,10 +537,11 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       avgTime,
       day,
       programId,
+      wasBeginnerMode: settings.beginnerMode,
       failedNotes: [...failedNotesRef.current],
       title
     } as ExtendedSessionResult;
-  }, [isFinished, isSequenceMode, questions.length, sequence?.length, day, programId, title]);
+  }, [isFinished, isSequenceMode, questions.length, sequence?.length, day, programId, title, settings.beginnerMode]);
 
   if (engineError) {
     return (

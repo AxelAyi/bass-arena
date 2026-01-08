@@ -7,6 +7,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import StarIcon from '@mui/icons-material/Star';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import SchoolIcon from '@mui/icons-material/School';
 import { PROGRAMS, DayTask } from '../data/program30days';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
@@ -62,23 +63,35 @@ const Program: React.FC = () => {
   }, [activeProgram, settings.language]);
 
   const dailyStats = useMemo(() => {
-    const stats: Record<number, { bestAcc: number, bestScore: number }> = {};
+    const stats: Record<number, { bestAcc: number, bestScore: number, isBeginnerBest: boolean, hasProCompletion: boolean }> = {};
     history.forEach(session => {
       if (session.programId === activeProgramId && session.day !== undefined) {
         const day = session.day;
         const current = stats[day];
+        const isBetter = !current || session.accuracy > current.bestAcc;
+        const isSuccessful = session.accuracy >= settings.minUnlockAccuracy;
+        
         if (!current) {
-          stats[day] = { bestAcc: session.accuracy, bestScore: session.score };
-        } else {
-          stats[day] = {
-            bestAcc: Math.max(current.bestAcc, session.accuracy),
-            bestScore: Math.max(current.bestScore, session.score)
+          stats[day] = { 
+            bestAcc: session.accuracy, 
+            bestScore: session.score, 
+            isBeginnerBest: !!session.wasBeginnerMode,
+            hasProCompletion: isSuccessful && !session.wasBeginnerMode
           };
+        } else {
+          if (isSuccessful && !session.wasBeginnerMode) {
+            current.hasProCompletion = true;
+          }
+          if (isBetter) {
+            current.bestAcc = session.accuracy;
+            current.bestScore = session.score;
+            current.isBeginnerBest = !!session.wasBeginnerMode;
+          }
         }
       }
     });
     return stats;
-  }, [history, activeProgramId]);
+  }, [history, activeProgramId, settings.minUnlockAccuracy]);
 
   const masteredCount = useMemo(() => 
     filteredDays.filter(task => {
@@ -276,9 +289,10 @@ const Program: React.FC = () => {
 
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {filteredDays.map((task, index) => {
-          const stats = dailyStats[task.day] || { bestAcc: 0, bestScore: 0 };
-          const isMastered = stats.bestAcc >= settings.minUnlockAccuracy;
+          const stats = dailyStats[task.day] || { bestAcc: 0, bestScore: 0, isBeginnerBest: false, hasProCompletion: false };
+          const isSuccessful = stats.bestAcc >= settings.minUnlockAccuracy;
           const unlocked = isTaskUnlocked(index);
+          const showBeginnerBadge = isSuccessful && !stats.hasProCompletion;
           
           return (
             <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={task.day}>
@@ -286,8 +300,8 @@ const Program: React.FC = () => {
                 sx={{ 
                   height: '100%', 
                   opacity: unlocked ? 1 : 0.6,
-                  bgcolor: isMastered ? 'rgba(76, 175, 80, 0.05)' : 'background.paper',
-                  border: isMastered ? '1px solid rgba(76, 175, 80, 0.2)' : (unlocked ? '1px solid divider' : '1px dashed divider'),
+                  bgcolor: isSuccessful ? 'rgba(76, 175, 80, 0.05)' : 'background.paper',
+                  border: isSuccessful ? '1px solid rgba(76, 175, 80, 0.2)' : (unlocked ? '1px solid divider' : '1px dashed divider'),
                   boxShadow: 'none',
                   borderRadius: 2
                 }}
@@ -295,14 +309,26 @@ const Program: React.FC = () => {
               >
                 <CardActionArea onClick={() => handleStartTask(task)} disabled={!unlocked} sx={{ height: '100%' }}>
                   <CardContent sx={{ p: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                      <Chip 
-                        label={`${t.day} ${index + 1}`} 
-                        size="small" 
-                        color={unlocked ? "primary" : "default"}
-                        sx={{ fontWeight: 800, borderRadius: 1 }} 
-                      />
-                      {isMastered ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5, alignItems: 'flex-start' }}>
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        <Chip 
+                          label={`${t.day} ${index + 1}`} 
+                          size="small" 
+                          color={unlocked ? "primary" : "default"}
+                          sx={{ fontWeight: 800, borderRadius: 1 }} 
+                        />
+                        {showBeginnerBadge && (
+                          <Chip 
+                            icon={<SchoolIcon sx={{ fontSize: '0.9rem !important' }} />}
+                            label={t.beginnerBadge}
+                            size="small"
+                            variant="outlined"
+                            color="secondary"
+                            sx={{ fontWeight: 700, height: 20, fontSize: '0.65rem', borderRadius: 1 }}
+                          />
+                        )}
+                      </Box>
+                      {isSuccessful ? (
                         <CheckCircleIcon color="success" fontSize="small" />
                       ) : (unlocked ? null : <LockIcon color="disabled" fontSize="small" />)}
                     </Box>
@@ -316,8 +342,8 @@ const Program: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                        {stats.bestAcc > 0 ? (
                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                           <StarIcon sx={{ color: isMastered ? '#4caf50' : '#ff9800', fontSize: 16 }} />
-                           <Typography variant="caption" sx={{ fontWeight: 800, color: isMastered ? '#4caf50' : '#ff9800' }}>
+                           <StarIcon sx={{ color: isSuccessful ? '#4caf50' : '#ff9800', fontSize: 16 }} />
+                           <Typography variant="caption" sx={{ fontWeight: 800, color: isSuccessful ? '#4caf50' : '#ff9800' }}>
                              {t.best}: {stats.bestAcc.toFixed(0)}%
                            </Typography>
                          </Box>

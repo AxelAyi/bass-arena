@@ -1,3 +1,4 @@
+
 import { AppLanguage } from '../state/store';
 
 export const translations: Record<AppLanguage, any> = {
@@ -60,7 +61,8 @@ export const translations: Record<AppLanguage, any> = {
       noNotesError: "No notes found for this exercise's criteria. Check your 4/5 string settings.",
       fret: 'Fret',
       scale: 'Scale',
-      notes: 'notes'
+      notes: 'notes',
+      beginnerBadge: 'Beginner'
     },
     training: {
       title: 'Training Room',
@@ -277,7 +279,8 @@ export const translations: Record<AppLanguage, any> = {
       noNotesError: "Aucune note trouvée pour ces critères. Vérifiez vos réglages 4/5 cordes.",
       fret: 'Frette',
       scale: 'Gamme',
-      notes: 'notes'
+      notes: 'notes',
+      beginnerBadge: 'Débutant'
     },
     training: {
       title: 'Salle d\'Entraînement',
@@ -494,7 +497,8 @@ export const translations: Record<AppLanguage, any> = {
       noNotesError: "No se encontraron notas para los criterios de este ejercicio. Revisa tus ajustes de 4/5 cuerdas.",
       fret: 'Traste',
       scale: 'Escala',
-      notes: 'notas'
+      notes: 'notas',
+      beginnerBadge: 'Principiante'
     },
     training: {
       title: 'Sala de Práctica',
