@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -17,7 +18,6 @@ export interface UserSettings {
   stabilityMs: number;
   timeLimit: number;
   strictOctave: boolean;
-  showFretNumber: boolean;
   lockString: boolean;
   selectedMicId: string;
   minUnlockAccuracy: number;
@@ -29,6 +29,7 @@ export interface UserSettings {
   language: AppLanguage;
   primaryColor: string;
   hasSeenWelcome: boolean;
+  beginnerMode: boolean;
   // Metronome Settings
   metronomeEnabled: boolean;
   metronomeBpm: number;
@@ -52,7 +53,6 @@ const DEFAULT_SETTINGS: UserSettings = {
   stabilityMs: 30,
   timeLimit: 5,
   strictOctave: false,
-  showFretNumber: true,
   lockString: true,
   selectedMicId: '',
   minUnlockAccuracy: 80,
@@ -64,6 +64,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   language: 'en',
   primaryColor: '#2196f3',
   hasSeenWelcome: false,
+  beginnerMode: true,
   metronomeEnabled: false,
   metronomeBpm: 100,
   metronomeVolume: 0.5,

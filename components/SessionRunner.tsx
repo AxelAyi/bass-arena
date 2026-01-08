@@ -1,11 +1,11 @@
 
-import { Box, Typography, IconButton, Container, CircularProgress, Alert, Paper, Stack, useTheme, Fade } from '@mui/material';
+import { Box, Typography, IconButton, Container, CircularProgress, Alert, Paper, Stack, useTheme, Fade, Zoom } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useStore, SessionResult } from '../state/store';
 import { AudioEngine, AudioStats } from '../audio/audioEngine';
-import { FretPosition } from '../data/fretboard';
+import { FretPosition, BASS_STRINGS } from '../data/fretboard';
 import { validateNote, translateNoteName } from '../audio/noteUtils';
 import { translations } from '../localization/translations';
 import TimerBar from './TimerBar';
@@ -30,6 +30,203 @@ export interface ExtendedSessionResult extends SessionResult {
   title: string;
 }
 
+const FretboardVisualAid: React.FC<{ stringIdx: number, fret: number, isFiveString: boolean, noteNaming: 'english' | 'latin' }> = ({ stringIdx, fret, isFiveString, noteNaming }) => {
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+  
+  const stringsToRender = isFiveString ? [0, 1, 2, 3, 4] : [0, 1, 2, 3];
+  
+  const blockIndex = fret > 0 ? Math.floor((fret - 1) / 3) : 0;
+  const startFret = blockIndex * 3;
+  
+  const fretWidth = 100;
+  const stringSpacing = 28;
+  const boardWidth = 3 * fretWidth; 
+  const boardHeight = (stringsToRender.length - 1) * stringSpacing;
+  
+  const neckTopOffset = 25;
+  const indicatorFrets = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
+
+  return (
+    <Box sx={{ width: '100%', py: 2, display: 'flex', justifyContent: 'center', bgcolor: 'transparent' }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
+        
+        {/* String Labels */}
+        <Box sx={{ position: 'relative', mr: 3, mt: `${neckTopOffset}px`, height: boardHeight }}>
+          {stringsToRender.map((s, i) => {
+            const isTargetString = s === stringIdx;
+            return (
+              <Typography 
+                key={s} 
+                variant="caption" 
+                sx={{ 
+                  position: 'absolute',
+                  top: i * stringSpacing,
+                  right: 0,
+                  transform: 'translateY(-50%)',
+                  fontWeight: 900, 
+                  fontSize: '0.85rem',
+                  color: isTargetString ? 'primary.main' : (isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'),
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap',
+                  textShadow: (isTargetString && fret === 0) ? `0 0 8px ${alpha(theme.palette.primary.main, 0.5)}` : 'none'
+                }}
+              >
+                {translateNoteName(BASS_STRINGS[s].name, noteNaming)}
+              </Typography>
+            );
+          })}
+        </Box>
+
+        {/* Fretboard Graphic Area */}
+        <Box sx={{ position: 'relative', width: boardWidth, height: boardHeight + neckTopOffset + 30 }}>
+          
+          {[0, 1, 2].map((i) => {
+            const fretVal = startFret + i + 1;
+            const isIndicator = indicatorFrets.includes(fretVal);
+            const labelColor = isIndicator ? 'text.primary' : 'text.secondary';
+            
+            return (
+              <React.Fragment key={i}>
+                <Box 
+                  key={`label-${i}`}
+                  sx={{ 
+                    position: 'absolute', 
+                    left: (i + 0.5) * fretWidth,
+                    top: -5,
+                    width: fretWidth,
+                    height: 25,
+                    textAlign: 'center',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      fontSize: isIndicator ? '0.8rem' : '0.75rem', 
+                      fontWeight: isIndicator ? 900 : 600, 
+                      color: labelColor, 
+                      opacity: isIndicator ? 1 : 0.8,
+                      lineHeight: 1
+                    }}
+                  >
+                    {fretVal}
+                  </Typography>
+                </Box>
+
+                {isIndicator && (
+                  <Box 
+                    key={`dot-${i}`}
+                    sx={{ 
+                      position: 'absolute', 
+                      left: (i + 0.5) * fretWidth,
+                      top: boardHeight + neckTopOffset + 10,
+                      width: 6, 
+                      height: 6, 
+                      borderRadius: '50%', 
+                      bgcolor: labelColor, 
+                      transform: 'translateX(-50%)',
+                      opacity: 0.6
+                    }} 
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+
+          <Box 
+            sx={{ 
+              position: 'absolute', 
+              top: neckTopOffset, 
+              left: 0, 
+              width: boardWidth, 
+              height: boardHeight, 
+              bgcolor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+              borderRadius: 0.5,
+              zIndex: 1
+            }} 
+          />
+
+          <Box sx={{ position: 'relative', top: neckTopOffset, height: boardHeight, width: boardWidth }}>
+            
+            {[0, 1, 2, 3].map((i) => {
+              const isNut = (startFret === 0 && i === 0);
+              return (
+                <Box 
+                  key={i} 
+                  sx={{ 
+                    position: 'absolute', 
+                    left: i * fretWidth, 
+                    top: 0, 
+                    bottom: 0, 
+                    width: isNut ? 5 : 2, 
+                    bgcolor: isDarkMode ? '#ffffff' : '#333333',
+                    opacity: isNut ? 1 : 0.4,
+                    zIndex: 10, 
+                    transform: 'translateX(-50%)',
+                  }} 
+                />
+              );
+            })}
+
+            {stringsToRender.map((s, i) => {
+              const isActive = s === stringIdx;
+              const stringColor = isActive 
+                ? theme.palette.primary.main 
+                : (isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)');
+              
+              return (
+                <Box 
+                  key={s} 
+                  sx={{ 
+                    position: 'absolute', 
+                    top: i * stringSpacing, 
+                    left: 0, 
+                    right: 0, 
+                    height: isActive ? 3 : 1.5, 
+                    bgcolor: stringColor,
+                    zIndex: isActive ? 20 : 5, 
+                    boxShadow: isActive ? `0 0 12px ${alpha(theme.palette.primary.main, 0.6)}` : 'none',
+                    transform: 'translateY(-50%)',
+                    transition: 'background-color 0.2s, height 0.2s'
+                  }} 
+                />
+              );
+            })}
+
+            {fret > 0 && (() => {
+              const spaceIndex = fret - startFret;
+              const markerX = (spaceIndex - 0.5) * fretWidth;
+              const markerY = stringsToRender.indexOf(stringIdx) * stringSpacing;
+
+              return (
+                <Box 
+                  sx={{ 
+                    position: 'absolute', 
+                    left: markerX, 
+                    top: markerY,
+                    width: 14, 
+                    height: 14, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    transform: 'translate(-50%, -50%)',
+                    boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                    zIndex: 30, 
+                    transition: 'left 0.15s ease-out, top 0.1s ease-out'
+                  }} 
+                />
+              );
+            })()}
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+};
+
 const SessionRunner: React.FC<SessionRunnerProps> = ({ 
   questions, 
   onFinish, 
@@ -43,6 +240,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const { settings, addSessionResult, recordAttempt } = useStore();
   const theme = useTheme();
   const t = translations[settings.language].session;
+  const isDarkMode = theme.palette.mode === 'dark';
   
   const [countdown, setCountdown] = useState<number | 'GO' | null>(3);
   const [currentIdx, setCurrentIdx] = useState(0); 
@@ -64,7 +262,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const stabilityCheckRef = useRef<number | null>(null);
   const wrongNoteLockoutRef = useRef<number | null>(null);
   
-  // Advanced transition and mute protection
   const lastTransitionMidiRef = useRef<number | null>(null);
   const isWaitingForNewAttackRef = useRef<boolean>(false);
   const lastRmsRef = useRef<number>(0);
@@ -78,11 +275,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     return questions[currentIdx]?.midi || 0;
   }, [isSequenceMode, sequence, sequenceIdx, questions, currentIdx]);
 
-  const currentQuestionMeta = useMemo(() => {
-    if (isSequenceMode) return null;
-    return questions[currentIdx];
-  }, [isSequenceMode, questions, currentIdx]);
-
   const currentTargetName = useMemo(() => {
     if (isSequenceMode) {
       const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -90,6 +282,11 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     }
     return questions[currentIdx]?.noteName || '--';
   }, [isSequenceMode, currentTargetMidi, questions, currentIdx]);
+
+  const currentQuestionMeta = useMemo(() => {
+    if (isSequenceMode) return null;
+    return questions[currentIdx];
+  }, [isSequenceMode, questions, currentIdx]);
 
   const finishSession = useCallback(() => {
     setIsFinished(true);
@@ -118,7 +315,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     stabilityCheckRef.current = null;
     wrongNoteLockoutRef.current = null;
     
-    // We are now waiting for a clean new pluck or silence
     isWaitingForNewAttackRef.current = true;
 
     if (isSequenceMode && sequence) {
@@ -203,7 +399,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     const prevRms = lastRmsRef.current;
     lastRmsRef.current = stats.rms;
 
-    // Reset logic: if it goes silent, we are definitely ready for a new note
     if (!isActive) {
       isWaitingForNewAttackRef.current = false;
       lastTransitionMidiRef.current = null;
@@ -213,19 +408,14 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       return;
     }
 
-    // Protection against mute "thuds" or "vibrations"
-    // If we are waiting for a new attack, we ignore all data until we see a significant volume jump
     if (isWaitingForNewAttackRef.current) {
-      // 1.8x volume jump indicates a clear new pluck (attack)
       const isNewAttack = stats.rms > prevRms * 1.8;
-      // Also check if the pitch has actually changed significantly (user shifted)
       const pitchShifted = stats.pitch && lastTransitionMidiRef.current !== null && 
                           Math.abs(stats.pitch.midi - lastTransitionMidiRef.current) > 0.8;
 
       if (isNewAttack || pitchShifted) {
         isWaitingForNewAttackRef.current = false;
       } else {
-        // Still vibrating or muting previous note
         return;
       }
     }
@@ -236,14 +426,11 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       return;
     }
 
-    // Protection against decay artifacts: 
-    // Stability shouldn't start or increase if the volume is dropping sharply (likely a mute/decay)
     const isDecaying = stats.rms < prevRms * 0.95;
     
     const isValid = validateNote(stats.pitch.midi, currentTargetMidi, settings.strictOctave);
     
     if (isValid) {
-      // If signal is decaying, we are suspicious of this stability
       if (isDecaying && stabilityCheckRef.current === null) {
         return; 
       }
@@ -263,7 +450,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       stabilityCheckRef.current = null;
       
       if (!settings.allowMultipleAttempts) {
-        // Don't trigger failure on sharp decay (mute artifact)
         if (isDecaying && wrongNoteLockoutRef.current === null) {
           return;
         }
@@ -271,7 +457,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         if (wrongNoteLockoutRef.current === null) {
           wrongNoteLockoutRef.current = Date.now();
         } else if (Date.now() - wrongNoteLockoutRef.current > 250) { 
-          // 250ms lockout for transition stability
           handleFailure();
         }
       }
@@ -283,7 +468,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     processRef.current = handleAudioProcess;
   }, [handleAudioProcess]);
 
-  // Countdown timer effect
   useEffect(() => {
     if (countdown === null) return;
     const timer = setTimeout(() => {
@@ -340,10 +524,11 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
 
   const summaryResult = useMemo(() => {
     if (!isFinished) return null;
-    const finalResults = resultsRef.current;
+    // Fix: Removed unused and incorrect reference to window.resultsRefCurrent which caused a TypeScript error.
+    // Note: Re-using the logic from the state-based resultsRef
     const totalExpected = isSequenceMode ? sequence?.length || 1 : questions.length;
-    const correctAnswers = finalResults.filter(r => r.correct).length;
-    const avgTime = finalResults.reduce((acc, r) => acc + r.time, 0) / (finalResults.length || 1);
+    const correctAnswers = resultsRef.current.filter(r => r.correct).length;
+    const avgTime = resultsRef.current.reduce((acc, r) => acc + r.time, 0) / (resultsRef.current.length || 1);
     
     return {
       date: new Date().toISOString(),
@@ -383,59 +568,91 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     );
   }
 
-  return (
-    <Container maxWidth="md" sx={{ py: 2, position: 'relative', minHeight: '80vh' }}>
-      {/* Countdown Overlay */}
-      {countdown !== null && (
-        <Box 
-          sx={{ 
-            position: 'absolute', 
-            inset: 0, 
-            zIndex: 100, 
-            display: 'flex', 
-            flexDirection: 'column',
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            bgcolor: alpha(theme.palette.background.default, 0.8),
-            backdropFilter: 'blur(12px)',
-            borderRadius: 2
-          }}
-        >
-          <Typography 
-            variant="subtitle1" 
-            color="primary" 
-            sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2, mb: 2 }}
-          >
-            {t.getReady}
-          </Typography>
-          <Box 
-            sx={{ 
-              width: 160, 
-              height: 160, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              border: '4px solid',
-              borderColor: 'primary.main',
-              borderRadius: '50%'
-            }}
-          >
-            <Fade key={countdown} in={true} timeout={300}>
-              <Typography 
-                variant="h1" 
-                sx={{ 
-                  fontWeight: 900, 
-                  fontSize: countdown === 'GO' ? '4rem' : '6rem', 
-                  color: countdown === 'GO' ? 'success.main' : 'primary.main' 
-                }}
-              >
-                {countdown === 'GO' ? t.go : countdown}
-              </Typography>
-            </Fade>
-          </Box>
-        </Box>
-      )}
+  // Centered Countdown State - Rendered within the standard app flow
+  if (countdown !== null) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          textAlign: 'center',
+          px: 3,
+          minHeight: '70vh',
+          bgcolor: 'transparent'
+        }}
+      >
+        <Fade in={true} timeout={600}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography 
+              variant="h4" 
+              sx={{ 
+                fontWeight: 900, 
+                textTransform: 'uppercase', 
+                letterSpacing: -0.5, 
+                mb: 1,
+                color: 'text.primary',
+                opacity: 0.9
+              }}
+            >
+              {title}
+            </Typography>
 
+            <Typography 
+              variant="subtitle1" 
+              color="primary" 
+              sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2, mb: 4, opacity: 0.7 }}
+            >
+              {t.getReady}
+            </Typography>
+
+            <Box 
+              sx={{ 
+                width: { xs: 140, sm: 180 }, 
+                height: { xs: 140, sm: 180 }, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                border: '6px solid',
+                borderColor: 'primary.main',
+                borderRadius: '50%',
+                position: 'relative',
+                boxShadow: (theme) => `0 0 40px ${alpha(theme.palette.primary.main, 0.15)}`
+              }}
+            >
+              <Fade key={countdown} in={true} timeout={300}>
+                <Typography 
+                  variant="h1" 
+                  sx={{ 
+                    fontWeight: 900, 
+                    fontSize: countdown === 'GO' ? { xs: '3.5rem', sm: '4.5rem' } : { xs: '5.5rem', sm: '7rem' }, 
+                    color: countdown === 'GO' 
+                      ? (isDarkMode ? '#ffffff' : 'primary.dark') 
+                      : 'primary.main',
+                    lineHeight: 1
+                  }}
+                >
+                  {countdown === 'GO' ? 'GO' : countdown}
+                </Typography>
+              </Fade>
+            </Box>
+            
+            <IconButton 
+              onClick={onFinish} 
+              sx={{ mt: 6, opacity: 0.5, '&:hover': { opacity: 1, color: 'error.main' } }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Fade>
+      </Box>
+    );
+  }
+
+  // Session UI (Active)
+  return (
+    <Container maxWidth="md" sx={{ py: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
         <Box>
           <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{title}</Typography>
@@ -461,25 +678,24 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
 
       <Box sx={{ 
         display: 'flex', 
-        flexDirection: { xs: 'column', sm: 'row' },
+        flexDirection: 'column',
         alignItems: 'center', 
         justifyContent: 'center', 
-        gap: { xs: 4, sm: 8 }, 
+        gap: { xs: 2, md: 4 }, 
         mb: 8, 
-        mt: isSequenceMode ? 2 : 6,
-        visibility: countdown !== null ? 'hidden' : 'visible' 
+        mt: isSequenceMode ? 2 : 6
       }}>
         <Box sx={{ textAlign: 'center', width: { xs: 'auto', sm: 220 } }}>
-          <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, display: 'block', mb: 1, opacity: 0.8 }}>
+          <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, display: 'block', mb: 0.5, opacity: 0.8 }}>
             {t.note}
           </Typography>
-          <Box sx={{ height: { xs: '6rem', sm: '9rem' }, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ height: { xs: '5rem', sm: '7rem' }, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography 
               variant="h1" 
               fontWeight="900" 
               sx={{ 
                 textTransform: 'uppercase', 
-                fontSize: { xs: '6rem', sm: '7.5rem', md: '9rem' },
+                fontSize: { xs: '5rem', sm: '6.5rem', md: '7.5rem' },
                 lineHeight: 1,
                 letterSpacing: -4,
                 color: 'text.primary',
@@ -492,33 +708,42 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         </Box>
 
         {!isSequenceMode && questions[currentIdx] && (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Paper 
-              elevation={0}
-              sx={{ 
-                px: 4, 
-                py: 2, 
-                borderRadius: 2, 
-                bgcolor: alpha(theme.palette.primary.main, settings.themeMode === 'dark' ? 0.08 : 0.04),
-                color: 'primary.main',
-                border: '1px solid',
-                borderColor: alpha(theme.palette.primary.main, 0.2),
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: { xs: 160, sm: 200 },
-                minHeight: 110, 
-                boxShadow: 'none'
-              }}
-            >
-              <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, mb: 1, opacity: 0.8, textAlign: 'center' }}>
-                {t.pluckString}
-              </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 900, textAlign: 'center' }}>
-                {translateNoteName(questions[currentIdx].stringName, settings.noteNaming).toUpperCase()}
-              </Typography>
-            </Paper>
+          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: { xs: '100%', md: 600 }, justifyContent: 'center', bgcolor: 'transparent' }}>
+            {settings.beginnerMode ? (
+              <FretboardVisualAid 
+                stringIdx={questions[currentIdx].string} 
+                fret={questions[currentIdx].fret} 
+                isFiveString={settings.isFiveString} 
+                noteNaming={settings.noteNaming} 
+              />
+            ) : (
+              <Paper 
+                elevation={0}
+                sx={{ 
+                  px: 4, 
+                  py: 2, 
+                  borderRadius: 2, 
+                  bgcolor: alpha(theme.palette.primary.main, settings.themeMode === 'dark' ? 0.08 : 0.04),
+                  color: 'primary.main',
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.primary.main, 0.2),
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: { xs: 160, sm: 200 },
+                  minHeight: 110, 
+                  boxShadow: 'none'
+                }}
+              >
+                <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, mb: 1, opacity: 0.8, textAlign: 'center' }}>
+                  {t.pluckString}
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 900, textAlign: 'center' }}>
+                  {translateNoteName(questions[currentIdx].stringName, settings.noteNaming).toUpperCase()}
+                </Typography>
+              </Paper>
+            )}
           </Box>
         )}
       </Box>

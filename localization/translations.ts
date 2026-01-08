@@ -1,4 +1,3 @@
-
 import { AppLanguage } from '../state/store';
 
 export const translations: Record<AppLanguage, any> = {
@@ -29,8 +28,8 @@ export const translations: Record<AppLanguage, any> = {
       timeLimit: 'Time Limit (sec)',
       unlockThreshold: 'Unlock Threshold',
       strictOctave: 'Strict Octave Validation',
-      showFret: 'Show Fret Hints',
       validateString: 'String Validation',
+      beginnerMode: 'Beginner Mode (fretboard diagram)',
       language: 'App Language',
       primaryColor: 'Primary Theme Color',
       localization: 'Localization',
@@ -110,7 +109,7 @@ export const translations: Record<AppLanguage, any> = {
       scaleDrill: 'Scale Drill',
       audioError: 'Audio Initialization Error',
       getReady: 'Get ready!',
-      go: 'GO!'
+      go: 'GO'
     },
     summary: {
       title: 'Session Complete!',
@@ -246,8 +245,8 @@ export const translations: Record<AppLanguage, any> = {
       timeLimit: 'Limite de temps (sec)',
       unlockThreshold: 'Seuil de déblocage',
       strictOctave: 'Validation d\'octave stricte',
-      showFret: 'Afficher les indices de frettes',
       validateString: 'Validation de la corde',
+      beginnerMode: 'Mode Débutant (diagramme du manche)',
       language: 'Langue de l\'application',
       primaryColor: 'Couleur de thème principale',
       localization: 'Localisation',
@@ -327,7 +326,7 @@ export const translations: Record<AppLanguage, any> = {
       scaleDrill: 'Exercice de Gamme',
       audioError: 'Erreur d\'initialisation audio',
       getReady: 'Préparez-vous !',
-      go: 'C\'EST PARTI !'
+      go: 'GO'
     },
     summary: {
       title: 'Session Terminée !',
@@ -340,7 +339,7 @@ export const translations: Record<AppLanguage, any> = {
       failures: 'Notes à réviser',
     },
     theory: {
-      title: 'Théorie du Bajo',
+      title: 'Maîtrise de la Théorie',
       modules: 'Modules',
       navBasics: 'Les Bases',
       navReading: 'Notation & Tabs',
@@ -426,7 +425,7 @@ export const translations: Record<AppLanguage, any> = {
       aiExperimentBody: 'Cette application est une expérimentation sur la construction rapide d\'applications avec l\'aide de l\'IA. En tant qu\'ingénieur, je pense qu\'il faut vivre avec son temps et se familiariser avec les outils modernes pour repousser les limites du possible.'
     },
     mic: {
-      required: 'Microphone Access Required',
+      required: 'Accès au Micro Requis',
       description: 'Nous avons besoin d\'accéder à votre microphone pour écouter vos notes de basse.',
       enable: 'Activer le Microphone',
       denied: 'Accès au micro refusé. Veuillez l\'activer dans les paramètres de votre navigateur.',
@@ -463,8 +462,8 @@ export const translations: Record<AppLanguage, any> = {
       timeLimit: 'Tiempo límite (seg)',
       unlockThreshold: 'Umbral de desbloqueo',
       strictOctave: 'Validación de octava estricta',
-      showFret: 'Mostrar pistas de trastes',
       validateString: 'Validación de cuerda',
+      beginnerMode: 'Modo Principiante (diagrama del mástil)',
       language: 'Idioma de la App',
       primaryColor: 'Color de tema principal',
       localization: 'Localización',
@@ -544,7 +543,7 @@ export const translations: Record<AppLanguage, any> = {
       scaleDrill: 'Ejercicio de Escala',
       audioError: 'Error de inicialización de audio',
       getReady: '¡Prepárate!',
-      go: '¡YA!'
+      go: 'GO'
     },
     summary: {
       title: '¡Sesión Finalizada!',

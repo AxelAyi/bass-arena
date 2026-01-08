@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { 
   Box, Typography, Paper, Divider, List, ListItem, ListItemText, 
@@ -146,7 +145,11 @@ const Theory: React.FC = () => {
                     <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2, border: '1px solid divider', height: '100%' }}>
                       <Typography variant="caption" color="primary" fontWeight="bold" sx={{ display: 'block', mb: 1, textTransform: 'uppercase' }}>{t.stringsTitle}</Typography>
                       <Typography variant="body2" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6, fontWeight: 600 }}>
-                        {settings.isFiveString ? '1. G (High)\n2. D\n3. A\n4. E\n5. B (Low)' : '1. G (High)\n2. D\n3. A\n4. E (Low)'}
+                        {settings.isFiveString ? (
+                          `1. ${translateNoteName('G', settings.noteNaming)} (${settings.language === 'en' ? 'High' : (settings.language === 'fr' ? 'Aigu' : 'Aguda')})\n2. ${translateNoteName('D', settings.noteNaming)}\n3. ${translateNoteName('A', settings.noteNaming)}\n4. ${translateNoteName('E', settings.noteNaming)}\n5. ${translateNoteName('B', settings.noteNaming)} (${settings.language === 'en' ? 'Low' : (settings.language === 'fr' ? 'Grave' : 'Grave')})`
+                        ) : (
+                          `1. ${translateNoteName('G', settings.noteNaming)} (${settings.language === 'en' ? 'High' : (settings.language === 'fr' ? 'Aigu' : 'Aguda')})\n2. ${translateNoteName('D', settings.noteNaming)}\n3. ${translateNoteName('A', settings.noteNaming)}\n4. ${translateNoteName('E', settings.noteNaming)} (${settings.language === 'en' ? 'Low' : (settings.language === 'fr' ? 'Grave' : 'Grave')})`
+                        )}
                       </Typography>
                     </Box>
                   </Grid>
