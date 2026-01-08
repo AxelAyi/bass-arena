@@ -1,14 +1,23 @@
 import React from 'react';
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, keyframes, alpha, useTheme } from '@mui/material';
 import { NoteInfo, translateNoteName } from '../audio/noteUtils';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
+
+const shake = keyframes`
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  50% { transform: translateX(8px); }
+  75% { transform: translateX(-8px); }
+  100% { transform: translateX(0); }
+`;
 
 interface NoteDisplayProps {
   detectedNote: NoteInfo | null;
   targetNoteName: string;
   isCorrect: boolean;
   isAlmost: boolean;
+  isFailure?: boolean;
   debug: boolean;
   rms: number;
 }
@@ -17,13 +26,16 @@ const NoteDisplay: React.FC<NoteDisplayProps> = ({
   detectedNote, 
   isCorrect, 
   isAlmost,
+  isFailure,
   debug,
   rms 
 }) => {
   const { settings } = useStore();
+  const theme = useTheme();
   const t = translations[settings.language].session;
   
   const getStatusColor = () => {
+    if (isFailure) return 'error.main';
     if (isCorrect) return 'success.main';
     if (isAlmost) return 'warning.main';
     return 'text.primary';
@@ -44,16 +56,18 @@ const NoteDisplay: React.FC<NoteDisplayProps> = ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        border: '1px solid', 
-        borderColor: 'divider', 
-        bgcolor: 'background.paper',
-        position: 'relative'
+        border: '2px solid', 
+        borderColor: isFailure ? 'error.main' : (isCorrect ? 'success.main' : 'divider'), 
+        bgcolor: isFailure ? alpha(theme.palette.error.main, 0.05) : (isCorrect ? alpha(theme.palette.success.main, 0.05) : 'background.paper'),
+        position: 'relative',
+        animation: isFailure ? `${shake} 0.4s cubic-bezier(.36,.07,.19,.97) both` : 'none',
+        transition: 'all 0.2s ease',
+        boxShadow: isCorrect ? `0 0 15px ${alpha(theme.palette.success.main, 0.4)}` : 'none'
       }}
     >
-      {/* Fixed label at the top */}
       <Typography 
         variant="caption" 
-        color="textSecondary" 
+        color={isFailure ? "error.main" : (isCorrect ? "success.main" : "textSecondary")} 
         sx={{ 
           textTransform: 'uppercase', 
           letterSpacing: 1, 
@@ -61,13 +75,13 @@ const NoteDisplay: React.FC<NoteDisplayProps> = ({
           display: 'block', 
           mb: 1,
           fontSize: '0.65rem',
-          opacity: 0.7
+          opacity: 0.7,
+          transition: 'color 0.2s'
         }}
       >
         {t.detected}
       </Typography>
 
-      {/* Fixed height container for the note itself */}
       <Box sx={{ 
         height: 40, 
         display: 'flex', 
@@ -79,15 +93,15 @@ const NoteDisplay: React.FC<NoteDisplayProps> = ({
           sx={{ 
             fontWeight: 900, 
             color: getStatusColor(),
-            textShadow: isCorrect ? '0 0 10px rgba(76, 175, 80, 0.3)' : 'none',
+            textShadow: isCorrect ? `0 0 12px ${alpha(theme.palette.success.main, 0.5)}` : (isFailure ? `0 0 12px ${alpha(theme.palette.error.main, 0.5)}` : 'none'),
             lineHeight: 1,
+            transition: 'color 0.2s'
           }}
         >
           {displayName}
         </Typography>
       </Box>
       
-      {/* Fixed height container for cents to prevent jumping */}
       <Box sx={{ 
         height: 20, 
         mt: 0.5, 
@@ -95,9 +109,14 @@ const NoteDisplay: React.FC<NoteDisplayProps> = ({
         alignItems: 'center', 
         justifyContent: 'center' 
       }}>
-        {detectedNote && (
+        {detectedNote && !isFailure && !isCorrect && (
           <Typography variant="caption" sx={{ fontWeight: 800, color: Math.abs(detectedNote.cents) < 15 ? 'success.light' : 'warning.light' }}>
             {detectedNote.cents > 0 ? `+${detectedNote.cents}` : detectedNote.cents}c
+          </Typography>
+        )}
+        {isCorrect && (
+          <Typography variant="caption" sx={{ fontWeight: 900, color: 'success.main', textTransform: 'uppercase', fontSize: '0.6rem' }}>
+            {t.perfect || 'MATCH'}
           </Typography>
         )}
       </Box>

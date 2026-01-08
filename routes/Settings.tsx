@@ -328,7 +328,7 @@ const Settings: React.FC = () => {
               </Box>
               
               <FormGroup>
-                  <FormControlLabel control={<Switch checked={settings.beginnerMode} onChange={handleSwitch('beginnerMode')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.beginnerMode}</Typography>} labelPlacement="end" />
+                <FormControlLabel control={<Switch checked={settings.beginnerMode} onChange={handleSwitch('beginnerMode')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.beginnerMode}</Typography>} labelPlacement="end" />
                 <FormControlLabel control={<Switch checked={settings.unlockAllExercises} onChange={handleSwitch('unlockAllExercises')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.unlockAllExercises}</Typography>} labelPlacement="end" />
                 <FormControlLabel control={<Switch checked={settings.strictOctave} onChange={handleSwitch('strictOctave')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.strictOctave}</Typography>} labelPlacement="end" />
                 <FormControlLabel control={<Switch checked={settings.lockString} onChange={handleSwitch('lockString')} color="primary" size="small" />} label={<Typography variant="body2" fontWeight="700">{t.validateString}</Typography>} labelPlacement="end" />
