@@ -1,3 +1,4 @@
+
 import { AppLanguage } from '../state/store';
 
 export const translations: Record<AppLanguage, any> = {
@@ -61,7 +62,29 @@ export const translations: Record<AppLanguage, any> = {
       fret: 'Fret',
       scale: 'Scale',
       notes: 'notes',
-      beginnerBadge: 'Beginner'
+      beginnerBadge: 'Beginner',
+      srsMode: 'Spaced Repetition System',
+      srsBadge: 'SRS Due',
+      srsLevel: 'Level',
+      srsNext: 'Next review:',
+      srsToday: 'Today!',
+      srsMastered: 'Mastered (Level 5)',
+      srsExplainer: 'How SRS Works',
+      srsIntervals: 'Intervals: 1d, 3d, 7d, 14d, 30d'
+    },
+    srs: {
+      title: 'Mastering Memory with Spaced Repetition',
+      intro: 'Fretboard memorization is a "forgetting" battle. SRS optimizes your practice by asking you to recall notes just as you are about to forget them.',
+      curveTitle: 'The Forgetting Curve',
+      curveDesc: 'Every time you recall a note correctly, the time it takes to forget it doubles. Our system tracks this automatically.',
+      levelsTitle: 'Progression Levels',
+      l1: 'Level 1: New knowledge (1 day interval)',
+      l2: 'Level 2: Strengthening (3 days interval)',
+      l3: 'Level 3: Intermediate (7 days interval)',
+      l4: 'Level 4: Stable (14 days interval)',
+      l5: 'Level 5: Long-term (30 days interval)',
+      gold: 'Gold Level: Once you pass the 30-day review, that knowledge is considered permanent.',
+      action: 'Enable SRS in the Program tab to start your optimized schedule.'
     },
     training: {
       title: 'Training Room',
@@ -278,7 +301,29 @@ export const translations: Record<AppLanguage, any> = {
       fret: 'Frette',
       scale: 'Gamme',
       notes: 'notes',
-      beginnerBadge: 'Débutant'
+      beginnerBadge: 'Débutant',
+      srsMode: 'Système de Répétition Espacée',
+      srsBadge: 'Répétition Due',
+      srsLevel: 'Niveau',
+      srsNext: 'Prochain test :',
+      srsToday: 'Aujourd\'hui !',
+      srsMastered: 'Maîtrisé (Niveau 5)',
+      srsExplainer: 'Comment fonctionne le SRS',
+      srsIntervals: 'Intervalles : 1j, 3j, 7j, 14j, 30j'
+    },
+    srs: {
+      title: 'Maîtriser la mémoire avec le SRS',
+      intro: 'La mémorisation du manche est une bataille contre l\'oubli. Le SRS optimise votre pratique en vous demandant de vous rappeler des notes juste au moment où vous allez les oublier.',
+      curveTitle: 'La Courbe de l\'Oubli',
+      curveDesc: 'Chaque fois que vous rappelez une note correctement, le temps nécessaire pour l\'oublier double. Notre système suit cela automatiquement.',
+      levelsTitle: 'Niveaux de Progression',
+      l1: 'Niveau 1 : Nouveau savoir (intervalle 1 jour)',
+      l2: 'Niveau 2 : Renforcement (3 jours)',
+      l3: 'Niveau 3 : Intermédiaire (7 jours)',
+      l4: 'Niveau 4 : Stable (14 jours)',
+      l5: 'Niveau 5 : Long terme (30 jours)',
+      gold: 'Niveau Or : Une fois le test de 30 jours réussi, le savoir est considéré comme permanent.',
+      action: 'Activez le SRS dans l\'onglet Programme pour démarrer votre planning optimisé.'
     },
     training: {
       title: 'Salle d\'Entraînement',
@@ -495,7 +540,29 @@ export const translations: Record<AppLanguage, any> = {
       fret: 'Traste',
       scale: 'Escala',
       notes: 'notas',
-      beginnerBadge: 'Principiante'
+      beginnerBadge: 'Principiante',
+      srsMode: 'Sistema de Repetición Espaciada',
+      srsBadge: 'Repetición Pendiente',
+      srsLevel: 'Nivel',
+      srsNext: 'Próxima revisión:',
+      srsToday: '¡Hoy!',
+      srsMastered: 'Dominado (Nivel 5)',
+      srsExplainer: 'Cómo funciona SRS',
+      srsIntervals: 'Intervalos: 1d, 3d, 7d, 14d, 30d'
+    },
+    srs: {
+      title: 'Dominando la memoria con SRS',
+      intro: 'Memorizar el mástil es una batalla contra el olvido. El SRS optimiza tu práctica pidiéndote que recuerdes las notas justo cuando estás a punto de olvidarlas.',
+      curveTitle: 'La Curva del Olvido',
+      curveDesc: 'Cada vez que recuerdas una nota correctamente, el tiempo que tardas en olvidarla se duplica. Nuestro sistema lo rastrea automáticamente.',
+      levelsTitle: 'Niveles de Progresión',
+      l1: 'Nivel 1: Nuevo conocimiento (1 día)',
+      l2: 'Nivel 2: Refuerzo (3 días)',
+      l3: 'Nivel 3: Intermedio (7 días)',
+      l4: 'Nivel 4: Estable (14 días)',
+      l5: 'Nivel 5: Largo plazo (30 días)',
+      gold: 'Nivel Oro: Una vez que pasas la revisión de 30 días, ese conocimiento se considera permanente.',
+      action: 'Activa el SRS en la pestaña Programa para iniciar tu horario optimizado.'
     },
     training: {
       title: 'Sala de Práctica',
@@ -571,7 +638,7 @@ export const translations: Record<AppLanguage, any> = {
       halfStepTitle: 'Semitonos',
       halfStepDesc: 'Casi todas las notas tienen un sostenido/bemol entre ellas, excepto estos dos pares naturales:',
       readingDesc: 'Usamos dos formas de leer música en el bajo: el Pentagrama (tradicional) y la Tablatura (geométrica).',
-      tabTitle: 'Tablatura (TAB)',
+      tabTitle: 'Tablature (TAB)',
       tabDesc: 'Las 4 líneas representan tus cuerdas. Sol (G) es la línea superior, Mi (E) es la inferior. Los números indican qué traste presionar.',
       staffTitle: 'Pentagrama',
       staffDesc: 'La música de bajo usa la Clave de Fa. Cada espacio y línea representa un tono específico en el sistema musical occidental.',

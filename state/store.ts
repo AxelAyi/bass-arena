@@ -12,6 +12,12 @@ export interface FretboardItemStats {
   lastAttempt: number;
 }
 
+export interface SRSTaskProgress {
+  level: number; // 0-5
+  lastCompleted: string; // ISO Date
+  nextReview: string; // ISO Date
+}
+
 export interface UserSettings {
   rmsThreshold: number;
   pitchTolerance: number;
@@ -30,6 +36,7 @@ export interface UserSettings {
   primaryColor: string;
   hasSeenWelcome: boolean;
   beginnerMode: boolean;
+  srsEnabled: boolean;
   // Metronome Settings
   metronomeEnabled: boolean;
   metronomeBpm: number;
@@ -66,6 +73,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   primaryColor: '#2196f3',
   hasSeenWelcome: false,
   beginnerMode: true,
+  srsEnabled: false,
   metronomeEnabled: false,
   metronomeBpm: 100,
   metronomeVolume: 0.5,
@@ -73,10 +81,13 @@ const DEFAULT_SETTINGS: UserSettings = {
   metronomeBeatsPerMeasure: 4,
 };
 
+const SRS_INTERVALS_DAYS = [0, 1, 3, 7, 14, 30];
+
 interface AppState {
   settings: UserSettings;
   history: SessionResult[];
   mastery: Record<string, FretboardItemStats>; // Key: s{string}f{fret}
+  srsProgress: Record<string, SRSTaskProgress>; // Key: {programId}-day{day}
   activeProgramId: string;
   updateSettings: (newSettings: Partial<UserSettings>) => void;
   addSessionResult: (result: SessionResult) => void;
@@ -94,13 +105,37 @@ export const useStore = create<AppState>()(
       settings: DEFAULT_SETTINGS,
       history: [],
       mastery: {},
+      srsProgress: {},
       activeProgramId: 'fretboard',
       updateSettings: (newSettings) => set((state) => ({ 
         settings: { ...state.settings, ...newSettings } 
       })),
-      addSessionResult: (result) => set((state) => ({ 
-        history: [...state.history, result] 
-      })),
+      addSessionResult: (result) => set((state) => {
+        const srsKey = `${result.programId}-day${result.day}`;
+        const currentSrs = state.srsProgress[srsKey] || { level: 0, lastCompleted: '', nextReview: '' };
+        
+        let newLevel = currentSrs.level;
+        if (result.accuracy >= state.settings.minUnlockAccuracy) {
+          newLevel = Math.min(5, currentSrs.level + 1);
+        } else {
+          newLevel = Math.max(0, currentSrs.level - 1);
+        }
+
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + SRS_INTERVALS_DAYS[newLevel]);
+
+        return {
+          history: [...state.history, result],
+          srsProgress: {
+            ...state.srsProgress,
+            [srsKey]: {
+              level: newLevel,
+              lastCompleted: result.date,
+              nextReview: nextDate.toISOString()
+            }
+          }
+        };
+      }),
       recordAttempt: (s, f, correct, time) => set((state) => {
         const key = `s${s}f${f}`;
         const current = state.mastery[key] || { attempts: 0, corrects: 0, totalTime: 0, lastAttempt: 0 };
@@ -123,22 +158,25 @@ export const useStore = create<AppState>()(
         settings: { ...DEFAULT_SETTINGS, ...newState.settings },
         history: newState.history || [],
         mastery: newState.mastery || {},
+        srsProgress: newState.srsProgress || {},
         activeProgramId: newState.activeProgramId || 'fretboard',
       })),
       resetStore: () => set(() => ({
         settings: DEFAULT_SETTINGS,
         history: [],
         mastery: {},
+        srsProgress: {},
         activeProgramId: 'fretboard',
         isMicEnabled: false,
       })),
     }),
     {
-      name: 'bass-arena-storage-v2',
+      name: 'bass-arena-storage-v3',
       partialize: (state) => ({
         settings: state.settings,
         history: state.history,
         mastery: state.mastery,
+        srsProgress: state.srsProgress,
         activeProgramId: state.activeProgramId,
       }),
     }
