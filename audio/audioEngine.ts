@@ -61,9 +61,6 @@ export class AudioEngine {
         await this.audioContext.resume();
       }
 
-      // Preload (uses cache internally)
-      await this.loadFailureSound();
-
       this.source = this.audioContext.createMediaStreamSource(this.stream);
 
       this.filter = this.audioContext.createBiquadFilter();

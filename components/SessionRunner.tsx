@@ -134,7 +134,7 @@ const FretboardVisualAid: React.FC<{ stringIdx: number, fret: number, isFiveStri
                       fontSize: isIndicator ? '0.8rem' : '0.75rem', 
                       fontWeight: isIndicator ? 900 : 600, 
                       color: labelColor, 
-                      opacity: isIndicator ? 1 : 0.8,
+                      opacity: i === (fret - 1 - startFret) ? 1 : 0.8,
                       lineHeight: 1
                     }}
                   >
@@ -402,10 +402,6 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       lastTransitionMidiRef.current = detected.pitch.midi;
     }
 
-    if (audioEngineRef.current) {
-      audioEngineRef.current.playFailureSound();
-    }
-    
     if (currentQuestionMeta) {
       recordAttempt(currentQuestionMeta.string, currentQuestionMeta.fret, false, settings.timeLimit);
     }
