@@ -11,10 +11,12 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MenuIcon from '@mui/icons-material/Menu';
 import InfoIcon from '@mui/icons-material/Info';
+import HomeIcon from '@mui/icons-material/Home';
 
 import { getAppTheme } from './theme';
 import { useStore } from './state/store';
 import { translations } from './localization/translations';
+import Landing from './routes/Landing';
 import Program from './routes/Program';
 import FreeTraining from './routes/FreeTraining';
 import Settings from './routes/Settings';
@@ -41,11 +43,13 @@ const Navigation = () => {
   const [value, setValue] = React.useState(0);
 
   React.useEffect(() => {
-    if (location.pathname === '/') setValue(0);
-    else if (location.pathname === '/training') setValue(1);
-    else if (location.pathname === '/theory') setValue(2);
-    else if (location.pathname === '/settings') setValue(3);
-    else if (location.pathname === '/about') setValue(4);
+    const path = location.pathname;
+    if (path === '/') setValue(0);
+    else if (path.startsWith('/program')) setValue(1);
+    else if (path.startsWith('/training')) setValue(2);
+    else if (path.startsWith('/theory')) setValue(3);
+    else if (path.startsWith('/settings')) setValue(4);
+    else if (path.startsWith('/about')) setValue(5);
   }, [location]);
 
   return (
@@ -68,7 +72,8 @@ const Navigation = () => {
         onChange={(_, newValue) => setValue(newValue)}
         sx={{ height: 64 }}
       >
-        <BottomNavigationAction label={t.program} icon={<MenuBookIcon />} component={Link} to="/" />
+        <BottomNavigationAction label={t.home} icon={<HomeIcon />} component={Link} to="/" />
+        <BottomNavigationAction label={t.program} icon={<MenuBookIcon />} component={Link} to="/program" />
         <BottomNavigationAction label={t.training} icon={<FitnessCenterIcon />} component={Link} to="/training" />
         <BottomNavigationAction label={t.theory} icon={<SchoolIcon />} component={Link} to="/theory" />
         <BottomNavigationAction label={t.settings} icon={<SettingsIcon />} component={Link} to="/settings" />
@@ -190,9 +195,18 @@ const App: React.FC = () => {
 
           <Container maxWidth="lg" sx={{ pt: 3 }}>
             <Routes>
-              <Route path="/" element={<Program />} />
+              <Route path="/" element={<Landing />} />
+              
+              <Route path="/program" element={<Program />} />
+              <Route path="/program/:programId" element={<Program />} />
+              <Route path="/program/:programId/day/:day" element={<Program />} />
+              
               <Route path="/training" element={<FreeTraining />} />
+              <Route path="/training/:sessionType" element={<FreeTraining />} />
+              
               <Route path="/theory" element={<Theory />} />
+              <Route path="/theory/:sectionId" element={<Theory />} />
+              
               <Route path="/settings" element={<Settings />} />
               <Route path="/about" element={<About />} />
             </Routes>

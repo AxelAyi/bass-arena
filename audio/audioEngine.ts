@@ -1,3 +1,4 @@
+
 import { detectPitchYIN, calculateRMS } from './yin';
 import { frequencyToNote, NoteInfo } from './noteUtils';
 
@@ -18,6 +19,7 @@ export class AudioEngine {
   private onProcess: (stats: AudioStats) => void;
 
   private bufferSize = 4096; 
+  private lastRMS = 0;
 
   constructor(onProcess: (stats: AudioStats) => void) {
     this.onProcess = onProcess;
@@ -30,7 +32,6 @@ export class AudioEngine {
       const response = await fetch('failure.mp3');
       if (!response.ok) throw new Error('Sound file not found');
       const arrayBuffer = await response.arrayBuffer();
-      // Use the instance audioContext to decode
       AudioEngine.failureBufferCache = await this.audioContext.decodeAudioData(arrayBuffer);
     } catch (err) {
       console.warn("AudioEngine: failure.mp3 could not be loaded.", err);
@@ -81,6 +82,11 @@ export class AudioEngine {
         
         const inputData = e.inputBuffer.getChannelData(0);
         const rms = calculateRMS(inputData);
+        
+        // Fix: Basic onset detection logic - check for significant volume jump compared to last frame
+        const isOnset = rms > this.lastRMS * 1.5 && rms > 0.005;
+        this.lastRMS = rms;
+
         const pitchFreq = detectPitchYIN(inputData, this.audioContext.sampleRate, 0.1);
         const pitch = pitchFreq ? frequencyToNote(pitchFreq) : null;
         
@@ -88,7 +94,8 @@ export class AudioEngine {
           pitch,
           rms,
           timestamp: Date.now(),
-          activeDeviceLabel
+          activeDeviceLabel,
+          isOnset // Added property
         });
       };
 
@@ -141,6 +148,5 @@ export class AudioEngine {
       }
       this.audioContext = null;
     }
-    // DO NOT clear AudioEngine.failureBufferCache here so it persists
   }
 }

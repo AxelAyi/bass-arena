@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   Box, Typography, Paper, Divider, List, ListItem, ListItemText, 
   ListItemButton, useTheme, useMediaQuery, Chip,
@@ -6,6 +6,7 @@ import {
   FormControl, InputLabel, Select, MenuItem, Stack
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
+import * as ReactRouterDOM from 'react-router-dom';
 import SchoolIcon from '@mui/icons-material/School';
 import InfoIcon from '@mui/icons-material/Info';
 import NavigationIcon from '@mui/icons-material/Navigation';
@@ -22,10 +23,13 @@ import { translateTextWithNotes, translateNoteName, NOTE_NAMES_ENGLISH } from '.
 import { translations } from '../localization/translations';
 import SheetMusic from '../components/SheetMusic';
 
+const { useParams, useNavigate } = ReactRouterDOM as any;
+
 const Theory: React.FC = () => {
   const { settings } = useStore();
+  const { sectionId } = useParams();
+  const navigate = useNavigate();
   const theme = useTheme();
-  // Fix: Cast theme to any to access breakpoints if standard Theme type is restricted
   const isMobile = useMediaQuery((theme as any).breakpoints.down('md'));
   const t = translations[settings.language].theory;
   
@@ -45,6 +49,15 @@ const Theory: React.FC = () => {
       window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
   };
+
+  // Auto-scroll when sectionId changes in URL
+  useEffect(() => {
+    if (sectionId) {
+      // Delay slightly to ensure element is rendered
+      const timer = setTimeout(() => scrollTo(sectionId), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [sectionId]);
 
   const navItems = [
     { id: 'detection', label: t.navDetection, icon: <TuneIcon fontSize="small" /> },
@@ -74,6 +87,10 @@ const Theory: React.FC = () => {
     return intervals.map(i => translateNoteName(NOTE_NAMES_ENGLISH[(rootIdx + i) % 12], settings.noteNaming)).join(' - ');
   };
 
+  const handleNavClick = (id: string) => {
+    navigate(`/theory/${id}`);
+  };
+
   return (
     <Box sx={{ pb: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
@@ -94,7 +111,7 @@ const Theory: React.FC = () => {
                   </ListItem>
                   {navItems.map((item) => (
                     <React.Fragment key={item.id}>
-                      <ListItemButton onClick={() => scrollTo(item.id)} sx={{ py: 1 }}>
+                      <ListItemButton onClick={() => handleNavClick(item.id)} sx={{ py: 1 }} selected={sectionId === item.id}>
                         <Box sx={{ mr: 1.5, display: 'flex', color: 'primary.main' }}>{item.icon}</Box>
                         <ListItemText primary={item.label} primaryTypographyProps={{ variant: 'caption', fontWeight: 700 }} />
                       </ListItemButton>
@@ -114,10 +131,7 @@ const Theory: React.FC = () => {
                 <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <TuneIcon /> {t.navDetection}
                 </Typography>
-                <Typography variant="body2" paragraph color="textSecondary">
-                  {t.detectionDesc}
-                </Typography>
-
+                <Typography variant="body2" paragraph color="textSecondary">{t.detectionDesc}</Typography>
                 <Grid container spacing={2}>
                   {[
                     { icon: <TuneIcon color="primary" />, text: t.tipTuner },
@@ -191,9 +205,8 @@ const Theory: React.FC = () => {
 
             <section id="construction">
               <Paper sx={{ p: 3, borderRadius: 2 }}>
-                <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2 }}>{t.constructionTitle}</Typography>
+                <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2 }}>{t.navConstruction}</Typography>
                 <Typography variant="body2" paragraph color="textSecondary">{t.constructionDesc}</Typography>
-                
                 <Box sx={{ mb: 4 }}>
                   <Typography variant="subtitle2" fontWeight="800" color="secondary" gutterBottom>{t.majorPattern}</Typography>
                   <Box sx={{ display: 'flex', gap: 0.5, mb: 2 }}>
@@ -204,7 +217,6 @@ const Theory: React.FC = () => {
                   <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, display: 'block' }}>{t.exCMajorFull}</Typography>
                   <SheetMusic midiNotes={[36, 38, 40, 41, 43, 45, 47, 48]} currentIndex={-1} isFiveString={settings.isFiveString} />
                 </Box>
-
                 <Box>
                   <Typography variant="subtitle2" fontWeight="800" color="secondary" gutterBottom>{t.minorPattern}</Typography>
                   <Box sx={{ display: 'flex', gap: 0.5, mb: 2 }}>
@@ -222,7 +234,6 @@ const Theory: React.FC = () => {
               <Paper sx={{ p: 3, borderRadius: 2 }}>
                 <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2 }}>{t.navPentatonic}</Typography>
                 <Typography variant="body2" paragraph color="textSecondary">{t.pentatonicDesc}</Typography>
-                
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2, border: '1px solid divider', height: '100%' }}>
@@ -237,7 +248,6 @@ const Theory: React.FC = () => {
                     </Box>
                   </Grid>
                 </Grid>
-
                 <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(156, 39, 176, 0.05)', borderRadius: 2, borderLeft: '4px solid', borderColor: 'secondary.main' }}>
                   <Typography variant="subtitle2" color="secondary" fontWeight="800">{t.guessingTitle}</Typography>
                   <Typography variant="body2">{t.guessingMajor}</Typography>
@@ -270,49 +280,34 @@ const Theory: React.FC = () => {
 
             <section id="memorizing">
               <Paper sx={{ p: 3, borderRadius: 2 }}>
-                <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2 }}>
-                  {t.navMemorizing}
-                </Typography>
-                <Typography variant="body2" color="textSecondary" paragraph>
-                  {t.libraryDesc}
-                </Typography>
-
+                <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2 }}>{t.navMemorizing}</Typography>
+                <Typography variant="body2" color="textSecondary" paragraph>{t.libraryDesc}</Typography>
                 <Stack spacing={3}>
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
                       <AutoAwesomeIcon color="secondary" fontSize="small" />
                       <Typography variant="subtitle2" fontWeight="800">{t.relativeHack}</Typography>
                     </Box>
-                    <Typography variant="body2" color="textSecondary">
-                      {t.relativeHackDesc}
-                    </Typography>
+                    <Typography variant="body2" color="textSecondary">{t.relativeHackDesc}</Typography>
                     <Box sx={{ mt: 1.5, p: 2, bgcolor: 'background.default', borderRadius: 2, border: '1px dashed divider' }}>
                       <Typography variant="caption" sx={{ fontWeight: 800, display: 'block', mb: 0.5 }}>{t.navBasics} (Example):</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {translate("C")} {t.majorPent} = {translate("A")} {t.minorPent}
-                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>{translate("C")} {t.majorPent} = {translate("A")} {t.minorPent}</Typography>
                       <Typography variant="caption" color="textSecondary">Notes: {translate("C - D - E - G - A")}</Typography>
                     </Box>
                   </Box>
-
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
                       <NavigationIcon color="secondary" fontSize="small" />
                       <Typography variant="subtitle2" fontWeight="800">{t.visualBoxShapes}</Typography>
                     </Box>
-                    <Typography variant="body2" color="textSecondary">
-                      {t.visualBoxShapesDesc}
-                    </Typography>
+                    <Typography variant="body2" color="textSecondary">{t.visualBoxShapesDesc}</Typography>
                   </Box>
-
                   <Box sx={{ p: 2, bgcolor: 'rgba(255, 152, 0, 0.05)', borderRadius: 2, border: '1px solid rgba(255, 152, 0, 0.2)' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
                       <LightbulbIcon sx={{ color: '#ff9800', fontSize: 20 }} />
                       <Typography variant="subtitle2" sx={{ color: '#e65100', fontWeight: 800 }}>{t.proTipTitle}</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: '#e65100' }}>
-                      {t.proTipDesc}
-                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#e65100' }}>{t.proTipDesc}</Typography>
                   </Box>
                 </Stack>
               </Paper>
@@ -320,27 +315,15 @@ const Theory: React.FC = () => {
 
             <section id="explorer">
               <Paper sx={{ p: 3, borderRadius: 2 }}>
-                <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2 }}>
-                  {t.scaleExplorer}
-                </Typography>
-                <Typography variant="body2" paragraph color="textSecondary">
-                  {t.scaleExplorerDesc}
-                </Typography>
-                
+                <Typography variant="h6" gutterBottom color="primary" fontWeight="800" sx={{ mb: 2 }}>{t.scaleExplorer}</Typography>
+                <Typography variant="body2" paragraph color="textSecondary">{t.scaleExplorerDesc}</Typography>
                 <Grid container spacing={2} sx={{ mb: 3 }}>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth size="small">
                       <InputLabel>{t.rootNote}</InputLabel>
-                      <Select
-                        value={explorerRoot}
-                        label={t.rootNote}
-                        onChange={(e) => setExplorerRoot(e.target.value)}
-                        sx={{ fontWeight: 700 }}
-                      >
+                      <Select value={explorerRoot} label={t.rootNote} onChange={(e) => setExplorerRoot(e.target.value)} sx={{ fontWeight: 700 }}>
                         {NOTE_NAMES_ENGLISH.map(note => (
-                          <MenuItem key={note} value={note}>
-                            {translateNoteName(note, settings.noteNaming)}
-                          </MenuItem>
+                          <MenuItem key={note} value={note}>{translateNoteName(note, settings.noteNaming)}</MenuItem>
                         ))}
                       </Select>
                     </FormControl>
@@ -348,24 +331,14 @@ const Theory: React.FC = () => {
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth size="small">
                       <InputLabel>{t.scaleType}</InputLabel>
-                      <Select
-                        value={explorerType}
-                        label={t.scaleType}
-                        onChange={(e) => setExplorerType(e.target.value as 'major' | 'minor')}
-                        sx={{ fontWeight: 700 }}
-                      >
+                      <Select value={explorerType} label={t.scaleType} onChange={(e) => setExplorerType(e.target.value as 'major' | 'minor')} sx={{ fontWeight: 700 }}>
                         <MenuItem value="major">{t.majorPent}</MenuItem>
                         <MenuItem value="minor">{t.minorPent}</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
                 </Grid>
-
-                <SheetMusic 
-                  midiNotes={explorerMidiNotes} 
-                  currentIndex={-1} 
-                  isFiveString={settings.isFiveString} 
-                />
+                <SheetMusic midiNotes={explorerMidiNotes} currentIndex={-1} isFiveString={settings.isFiveString} />
               </Paper>
             </section>
           </Box>

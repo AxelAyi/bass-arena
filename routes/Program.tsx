@@ -1,16 +1,12 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper, FormControlLabel, Switch, IconButton, Tooltip, keyframes, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper, FormControlLabel, Switch, IconButton, keyframes, alpha, useTheme } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import * as ReactRouterDOM from 'react-router-dom';
 import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import StarIcon from '@mui/icons-material/Star';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
-import SchoolIcon from '@mui/icons-material/School';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import EventRepeatIcon from '@mui/icons-material/EventRepeat';
-import TimerIcon from '@mui/icons-material/Timer';
+
 import { PROGRAMS, DayTask } from '../data/program30days';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
@@ -20,7 +16,7 @@ import SRSExplainer from '../components/SRSExplainer';
 import { getAllPositionsInRanges, FretPosition } from '../data/fretboard';
 import { translateTextWithNotes } from '../audio/noteUtils';
 
-const { useLocation } = ReactRouterDOM as any;
+const { useParams, useNavigate } = ReactRouterDOM as any;
 
 const pulse = keyframes`
   0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4); }
@@ -35,10 +31,11 @@ interface ActiveTaskInfo {
 }
 
 const Program: React.FC = () => {
-  const { history, settings, activeProgramId, setActiveProgramId, isMicEnabled, updateSettings, srsProgress } = useStore();
+  const { history, settings, updateSettings, srsProgress, isMicEnabled } = useStore();
+  const { programId, day } = useParams();
+  const navigate = useNavigate();
   const theme = useTheme();
   const t = translations[settings.language].program;
-  const location = useLocation();
   
   const [activeTask, setActiveTask] = useState<ActiveTaskInfo | null>(null);
   const [sessionKey, setSessionKey] = useState(0); 
@@ -47,15 +44,13 @@ const Program: React.FC = () => {
   const [srsExplainerOpen, setSrsExplainerOpen] = useState(false);
   const [pendingTask, setPendingTask] = useState<DayTask | null>(null);
 
-  useEffect(() => {
-    setActiveTask(null);
-  }, [location.key]);
-
+  // Determine current active program from URL or fallback
+  const currentProgramId = useMemo(() => programId || 'fretboard', [programId]);
+  
   const activeProgram = useMemo(() => 
-    PROGRAMS.find(p => p.id === activeProgramId) || PROGRAMS[0],
-  [activeProgramId]);
+    PROGRAMS.find(p => p.id === currentProgramId) || PROGRAMS[0],
+  [currentProgramId]);
 
-  // Fix: Define localized name and description for the active program to resolve "Cannot find name" errors
   const localizedProgramName = useMemo(() => {
     if (settings.language === 'fr') return activeProgram.name_fr || activeProgram.name;
     if (settings.language === 'es') return activeProgram.name_es || activeProgram.name;
@@ -69,8 +64,8 @@ const Program: React.FC = () => {
   }, [activeProgram, settings.language]);
 
   const filteredDays = useMemo(() => {
-    return activeProgram.days.filter(day => {
-      if (!settings.isFiveString && day.isFiveStringOnly) return false;
+    return activeProgram.days.filter(d => {
+      if (!settings.isFiveString && d.isFiveStringOnly) return false;
       return true;
     });
   }, [activeProgram.days, settings.isFiveString]);
@@ -78,14 +73,14 @@ const Program: React.FC = () => {
   const dailyStats = useMemo(() => {
     const stats: Record<number, { bestAcc: number, bestScore: number, isBeginnerBest: boolean, hasProCompletion: boolean }> = {};
     history.forEach(session => {
-      if (session.programId === activeProgramId && session.day !== undefined) {
-        const day = session.day;
-        const current = stats[day];
+      if (session.programId === currentProgramId && session.day !== undefined) {
+        const dayNum = session.day;
+        const current = stats[dayNum];
         const isBetter = !current || session.accuracy > current.bestAcc;
         const isSuccessful = session.accuracy >= settings.minUnlockAccuracy;
         
         if (!current) {
-          stats[day] = { 
+          stats[dayNum] = { 
             bestAcc: session.accuracy, 
             bestScore: session.score, 
             isBeginnerBest: !!session.wasBeginnerMode,
@@ -104,7 +99,7 @@ const Program: React.FC = () => {
       }
     });
     return stats;
-  }, [history, activeProgramId, settings.minUnlockAccuracy]);
+  }, [history, currentProgramId, settings.minUnlockAccuracy]);
 
   const masteredCount = useMemo(() => 
     filteredDays.filter(task => {
@@ -113,7 +108,7 @@ const Program: React.FC = () => {
     }).length,
   [filteredDays, dailyStats, settings.minUnlockAccuracy]);
   
-  const progressPercent = (masteredCount / filteredDays.length) * 100;
+  const progressPercent = (masteredCount / (filteredDays.length || 1)) * 100;
 
   const isTaskUnlocked = useCallback((taskIndex: number) => {
     if (settings.unlockAllExercises) return true;
@@ -125,7 +120,6 @@ const Program: React.FC = () => {
 
   const sanitizeText = useCallback((task: DayTask, type: 'title' | 'description') => {
     let clean = '';
-    
     if (settings.language === 'fr') {
       clean = (type === 'title' ? task.title_fr : task.description_fr) || (type === 'title' ? task.title : task.description);
     } else if (settings.language === 'es') {
@@ -136,21 +130,12 @@ const Program: React.FC = () => {
 
     if (!settings.isFiveString) {
       clean = clean
-        .replace(/\s*&\s*B/gi, '')
-        .replace(/\s*y\s*Si/gi, '')
-        .replace(/\s*&\s*Si/gi, '')
-        .replace(/\s*and\s*B/gi, '')
-        .replace(/B\s*&\s*/gi, '')
-        .replace(/Si\s*&\s*/gi, '')
-        .replace(/B\s*string/gi, 'lower strings')
-        .replace(/Corde\s*Si/gi, 'cordes graves')
-        .replace(/Cuerda\s*Si/gi, 'cuerdas graves')
-        .replace(/B:/gi, ':')
-        .replace(/Si:/gi, ':')
-        .replace(/\s+/g, ' ')
-        .trim();
+        .replace(/\s*&\s*B/gi, '').replace(/\s*y\s*Si/gi, '').replace(/\s*&\s*Si/gi, '')
+        .replace(/\s*and\s*B/gi, '').replace(/B\s*&\s*/gi, '').replace(/Si\s*&\s*/gi, '')
+        .replace(/B\s*string/gi, 'lower strings').replace(/Corde\s*Si/gi, 'cordes graves')
+        .replace(/Cuerda\s*Si/gi, 'cuerdas graves').replace(/B:/gi, ':').replace(/Si:/gi, ':')
+        .replace(/\s+/g, ' ').trim();
     }
-    
     return translateTextWithNotes(clean, settings.noteNaming);
   }, [settings.isFiveString, settings.noteNaming, settings.language]);
 
@@ -172,7 +157,7 @@ const Program: React.FC = () => {
     return finalQuestions;
   }, [settings.isFiveString]);
 
-  const startActualTask = useCallback((task: DayTask) => {
+  const launchTask = useCallback((task: DayTask) => {
     const qs = generateQuestions(task);
     const taskTitle = sanitizeText(task, 'title');
     if (qs.length === 0 && !task.sequence) {
@@ -183,27 +168,36 @@ const Program: React.FC = () => {
     setSessionKey(prev => prev + 1);
   }, [generateQuestions, sanitizeText, t.noNotesError]);
 
-  const handleStartTask = useCallback((task: DayTask, force: boolean = false) => {
-    const taskIndex = filteredDays.findIndex(d => d.day === task.day);
-    if (force || isTaskUnlocked(taskIndex)) {
-      if (!isMicEnabled && !force) {
-        setPendingTask(task);
-        setMicDialogOpen(true);
-      } else {
-        startActualTask(task);
+  // Launch logic based on URL params
+  useEffect(() => {
+    if (day) {
+      const dayNum = parseInt(day);
+      const task = filteredDays.find(d => d.day === dayNum);
+      if (task) {
+        const taskIdx = filteredDays.indexOf(task);
+        if (isTaskUnlocked(taskIdx)) {
+          if (isMicEnabled) {
+            launchTask(task);
+          } else {
+            setPendingTask(task);
+            setMicDialogOpen(true);
+          }
+        } else {
+            // Task locked, redirect back to program list
+            navigate(`/program/${currentProgramId}`);
+        }
       }
+    } else {
+      setActiveTask(null);
     }
-  }, [isTaskUnlocked, isMicEnabled, filteredDays, startActualTask]);
+  }, [day, filteredDays, currentProgramId, isTaskUnlocked, isMicEnabled, launchTask, navigate]);
 
-  const handleToggleSrs = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateSettings({ srsEnabled: e.target.checked });
+  const handleStartTask = (task: DayTask) => {
+    navigate(`/program/${currentProgramId}/day/${task.day}`);
   };
 
-  const getSrsLevelColor = (level: number) => {
-    if (level === 0) return 'default';
-    if (level <= 2) return 'warning';
-    if (level <= 4) return 'primary';
-    return 'success';
+  const handleProgramTabChange = (_: any, val: string) => {
+    navigate(`/program/${val}`);
   };
 
   if (activeTask) {
@@ -212,11 +206,10 @@ const Program: React.FC = () => {
         key={sessionKey}
         questions={activeTask.questions} 
         title={activeTask.title}
-        onFinish={() => setActiveTask(null)}
+        onFinish={() => navigate(`/program/${currentProgramId}`)}
         day={activeTask.task.day}
-        programId={activeProgramId}
-        onReplay={() => handleStartTask(activeTask.task, true)}
-        onNext={null as any}
+        programId={currentProgramId}
+        onReplay={() => setSessionKey(prev => prev + 1)}
         sequence={activeTask.task.sequence}
       />
     );
@@ -231,8 +224,8 @@ const Program: React.FC = () => {
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), px: 2, py: 0.5, borderRadius: 10, border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.1) }}>
           <FormControlLabel
-            control={<Switch checked={settings.srsEnabled} onChange={handleToggleSrs} size="small" />}
-            label={<Typography variant="caption" fontWeight="900" color="primary">{t.srsMode}</Typography>}
+            control={<Switch checked={settings.srsEnabled} onChange={(e) => updateSettings({ srsEnabled: e.target.checked })} size="small" />}
+            label={<Typography variant="caption" fontWeight="900" color="primary">{translations[settings.language].program.srsMode}</Typography>}
             sx={{ m: 0 }}
           />
           <IconButton size="small" onClick={() => setSrsExplainerOpen(true)} color="primary">
@@ -242,17 +235,8 @@ const Program: React.FC = () => {
       </Box>
 
       <Box sx={{ mb: 4 }}>
-        <Paper 
-          sx={{ mb: 3, borderRadius: 2, overflow: 'hidden', border: 'none', bgcolor: 'background.paper' }} 
-          elevation={0}
-        >
-          <Tabs 
-            value={activeProgramId} 
-            onChange={(_, val) => setActiveProgramId(val)} 
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{ px: 1, minHeight: 48 }}
-          >
+        <Paper sx={{ mb: 3, borderRadius: 2, overflow: 'hidden', border: 'none', bgcolor: 'background.paper' }} elevation={0}>
+          <Tabs value={currentProgramId} onChange={handleProgramTabChange} variant="scrollable" scrollButtons="auto" sx={{ px: 1, minHeight: 48 }}>
             {PROGRAMS.map(p => (
               <Tab 
                 key={p.id} 
@@ -281,13 +265,10 @@ const Program: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {filteredDays.map((task, index) => {
           const stats = dailyStats[task.day] || { bestAcc: 0, bestScore: 0, isBeginnerBest: false, hasProCompletion: false };
-          const srs = srsProgress[`${activeProgramId}-day${task.day}`] || { level: 0, nextReview: '' };
+          const srs = srsProgress[`${currentProgramId}-day${task.day}`] || { level: 0, nextReview: '' };
           const isSuccessful = stats.bestAcc >= settings.minUnlockAccuracy;
           const unlocked = isTaskUnlocked(index);
-          const showBeginnerBadge = isSuccessful && !stats.hasProCompletion;
-          
           const isDue = settings.srsEnabled && srs.nextReview && new Date(srs.nextReview) <= new Date();
-          const isLevel5 = srs.level === 5;
 
           return (
             <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={task.day}>
@@ -298,84 +279,24 @@ const Program: React.FC = () => {
                   bgcolor: isDue ? alpha(theme.palette.error.main, 0.05) : (isSuccessful ? alpha(theme.palette.success.main, 0.05) : 'background.paper'),
                   border: isDue ? `2px solid ${theme.palette.error.main}` : (isSuccessful ? `1px solid ${alpha(theme.palette.success.main, 0.2)}` : (unlocked ? '1px solid divider' : '1px dashed divider')),
                   animation: isDue ? `${pulse} 2s infinite ease-in-out` : 'none',
-                  boxShadow: isLevel5 ? `0 0 15px ${alpha(theme.palette.success.main, 0.2)}` : 'none',
                   borderRadius: 2,
-                  position: 'relative',
-                  overflow: 'hidden'
+                  position: 'relative'
                 }}
                 elevation={0}
               >
-                {isLevel5 && (
-                  <Box sx={{ position: 'absolute', top: 0, right: 0, width: 40, height: 40, background: 'linear-gradient(45deg, transparent 50%, #4caf50 50%)', opacity: 0.8 }} />
-                )}
                 <CardActionArea onClick={() => handleStartTask(task)} disabled={!unlocked} sx={{ height: '100%' }}>
                   <CardContent sx={{ p: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5, alignItems: 'flex-start' }}>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <Chip 
-                          label={`${t.day} ${index + 1}`} 
-                          size="small" 
-                          color={unlocked ? "primary" : "default"}
-                          sx={{ fontWeight: 800, borderRadius: 1 }} 
-                        />
-                        {settings.srsEnabled && srs.level > 0 && (
-                          <Chip 
-                            icon={<EventRepeatIcon sx={{ fontSize: '0.8rem !important' }} />}
-                            label={`${t.srsLevel} ${srs.level}`}
-                            size="small"
-                            color={getSrsLevelColor(srs.level)}
-                            sx={{ fontWeight: 800, height: 20, fontSize: '0.65rem', borderRadius: 1 }}
-                          />
-                        )}
-                        {showBeginnerBadge && !isDue && (
-                          <Chip icon={<SchoolIcon sx={{ fontSize: '0.9rem !important' }} />} label={t.beginnerBadge} size="small" variant="outlined" color="secondary" sx={{ fontWeight: 700, height: 20, fontSize: '0.65rem', borderRadius: 1 }} />
-                        )}
-                        {isDue && (
-                          <Chip label={t.srsBadge} size="small" color="error" sx={{ fontWeight: 900, height: 20, fontSize: '0.65rem', borderRadius: 1 }} />
-                        )}
+                        <Chip label={`${t.day} ${index + 1}`} size="small" color={unlocked ? "primary" : "default"} sx={{ fontWeight: 800, borderRadius: 1 }} />
+                        {isDue && <Chip label="SRS Due" size="small" color="error" sx={{ fontWeight: 900, height: 20, fontSize: '0.65rem', borderRadius: 1 }} />}
                       </Box>
-                      {isLevel5 ? (
-                         <StarIcon color="success" fontSize="small" />
-                      ) : isSuccessful ? (
-                        <CheckCircleIcon color="success" fontSize="small" />
-                      ) : (unlocked ? null : <LockIcon color="disabled" fontSize="small" />)}
+                      {isSuccessful ? <CheckCircleIcon color="success" fontSize="small" /> : (!unlocked && <LockIcon color="disabled" fontSize="small" />)}
                     </Box>
-                    <Typography variant="subtitle1" gutterBottom fontWeight="800" color={unlocked ? "text.primary" : "text.disabled"}>
-                      {sanitizeText(task, 'title')}
-                    </Typography>
-                    
-                    {settings.srsEnabled && srs.level > 0 && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                        <TimerIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                        <Typography variant="caption" color="textSecondary" fontWeight="700">
-                          {t.srsNext} {isDue ? <span style={{ color: theme.palette.error.main }}>{t.srsToday}</span> : (isLevel5 ? t.srsMastered : new Date(srs.nextReview).toLocaleDateString())}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2, minHeight: 32 }}>
-                      {sanitizeText(task, 'description')}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                       {stats.bestAcc > 0 ? (
-                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                           <StarIcon sx={{ color: isSuccessful ? '#4caf50' : '#ff9800', fontSize: 16 }} />
-                           <Typography variant="caption" sx={{ fontWeight: 800, color: isSuccessful ? '#4caf50' : '#ff9800' }}>
-                             {t.best}: {stats.bestAcc.toFixed(0)}%
-                           </Typography>
-                         </Box>
-                       ) : (
-                         <Typography variant="caption" color="text.disabled">{t.noAttempts}</Typography>
-                       )}
-                    </Box>
-
+                    <Typography variant="subtitle1" gutterBottom fontWeight="800">{sanitizeText(task, 'title')}</Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>{sanitizeText(task, 'description')}</Typography>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       <Chip label={`${t.fret} ${task.fretRange[0]}-${task.fretRange[1]}`} size="small" variant="outlined" sx={{ borderRadius: 1, fontSize: '0.7rem' }} />
-                      {activeProgramId !== 'pentatonic' && (
-                        <Chip label={`${task.questionCount || 10} ${t.notes}`} size="small" variant="outlined" sx={{ borderRadius: 1, fontSize: '0.7rem', opacity: 0.6 }} />
-                      )}
-                      {task.sequence && <Chip label={`♪ ${t.scale}`} size="small" color="secondary" variant="filled" sx={{ fontWeight: 700, borderRadius: 1, fontSize: '0.7rem' }} />}
                     </Box>
                   </CardContent>
                 </CardActionArea>
@@ -384,18 +305,16 @@ const Program: React.FC = () => {
           );
         })}
       </Grid>
+      
       <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
         <Alert onClose={() => setError(null)} severity="error" variant="filled" sx={{ width: '100%' }}>{error}</Alert>
       </Snackbar>
       <MicPermissionDialog 
         open={micDialogOpen} 
         onClose={() => setMicDialogOpen(false)} 
-        onSuccess={() => pendingTask && handleStartTask(pendingTask, true)} 
+        onSuccess={() => pendingTask && launchTask(pendingTask)} 
       />
-      <SRSExplainer 
-        open={srsExplainerOpen} 
-        onClose={() => setSrsExplainerOpen(false)} 
-      />
+      <SRSExplainer open={srsExplainerOpen} onClose={() => setSrsExplainerOpen(false)} />
     </Box>
   );
 };

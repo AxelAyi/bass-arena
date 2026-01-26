@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Box, Typography, Paper, Avatar, Link, IconButton, Divider } from '@mui/material';
+import { Box, Typography, Paper, Avatar, Link, IconButton, Divider, alpha } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import EmailIcon from '@mui/icons-material/Email';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
@@ -66,8 +65,11 @@ const About: React.FC = () => {
             {t.aiExperimentTitle}
           </Typography>
         </Box>
-        <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.8, fontStyle: 'italic' }}>
+        <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.8, fontStyle: 'italic', mb: 2 }}>
           {t.aiExperimentBody}
+        </Typography>
+        <Typography variant="caption" sx={{ lineHeight: 1.8, fontStyle: 'italic', opacity: 0.7, display: 'block', color: 'primary.main', fontWeight: 700 }}>
+          {t.aiExperimentJoke}
         </Typography>
       </Paper>
 

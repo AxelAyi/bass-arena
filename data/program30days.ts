@@ -12,6 +12,9 @@ export interface DayTask {
   sequence?: number[]; 
   isFiveStringOnly?: boolean;
   questionCount?: number; // Optional count of questions for this task
+  isRhythm?: boolean;
+  pattern?: number[];
+  midiSequence?: number[];
 }
 
 export interface TrainingProgram {
@@ -28,7 +31,7 @@ export interface TrainingProgram {
 const G = 0, D = 1, A = 2, E = 3, B = 4;
 
 const FRETBOARD_MASTERY_DAYS: DayTask[] = [
-  // --- PHASE 1: OPEN STRINGS ---
+  // --- PHASE 1: OPEN STRINGS & LOWER FRETS ---
   { 
     day: 1, 
     title: "Open Strings Awareness", 
@@ -41,516 +44,473 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     fretRange: [0, 0],
     questionCount: 12
   },
-
-  // --- PHASE 2: FIRST POSITION (0-5) - ONE STRING ---
   { 
     day: 2, 
-    title: "B String: First Steps (0-5)", 
-    description: "Focus exclusively on the first 5 frets of the low B string.", 
-    title_fr: "Corde Si : Premiers pas (0-5)",
-    description_fr: "Concentrez-vous exclusivement sur les 5 premières frettes de la corde de Si grave.",
-    title_es: "Cuerda Si: Primeros pasos (0-5)",
-    description_es: "Concéntrate exclusivamente en los primeros 5 trastes de la cuerda Si grave.",
-    strings: [B], 
-    fretRange: [0, 5], 
-    isFiveStringOnly: true,
-    questionCount: 12
+    title: "E String: Frets 1-3", 
+    description: "Learn the lowest notes: F, F#, and G.", 
+    title_fr: "Corde Mi : Frettes 1-3",
+    description_fr: "Apprenez les notes les plus graves : Fa, Fa# et Sol.",
+    title_es: "Cuerda Mi: Trastes 1-3",
+    description_es: "Aprende las notas más graves: Fa, Fa# y Sol.",
+    strings: [E], 
+    fretRange: [1, 3] 
   },
   { 
     day: 3, 
-    title: "E String: Linear 0-5", 
-    description: "Learn the first 5 frets of the E string: F, F#, G, G#, A.", 
-    title_fr: "Corde Mi : Linéaire 0-5",
-    description_fr: "Apprenez les 5 premières frettes de la corde de Mi : Fa, Fa#, Sol, Sol#, La.",
-    title_es: "Cuerda Mi: Lineal 0-5",
-    description_es: "Aprende los primeros 5 trastes de la cuerda Mi: Fa, Fa#, Sol, Sol#, La.",
-    strings: [E], 
-    fretRange: [0, 5],
-    questionCount: 12
+    title: "A String: Frets 1-3", 
+    description: "Master Bb, B, and C on the A string.", 
+    title_fr: "Corde La : Frettes 1-3",
+    description_fr: "Maîtrisez Sib, Si et Do sur la corde La.",
+    title_es: "Cuerda La: Trastes 1-3",
+    description_es: "Domina Sib, Si y Do en la cuerda La.",
+    strings: [A], 
+    fretRange: [1, 3] 
   },
   { 
     day: 4, 
-    title: "A String: Linear 0-5", 
-    description: "Learn the first 5 frets of the A string: Bb, B, C, C#, D.", 
-    title_fr: "Corde La : Linéaire 0-5",
-    description_fr: "Apprenez les 5 premières frettes de la corde de La : Sib, Si, Do, Do#, Ré.",
-    title_es: "Cuerda La: Lineal 0-5",
-    description_es: "Aprende los primeros 5 trastes de la cuerda La: Sib, Si, Do, Do#, Re.",
-    strings: [A], 
-    fretRange: [0, 5],
-    questionCount: 12
+    title: "D String: Frets 1-3", 
+    description: "Focus on Eb, E, and F on the D string.", 
+    title_fr: "Corde Ré : Frettes 1-3",
+    description_fr: "Concentrez-vous sur Mib, Mi et Fa sur la corde Ré.",
+    title_es: "Cuerda Re: Trastes 1-3",
+    description_es: "Céntrate en Mib, Mi y Fa en la cuerda Re.",
+    strings: [D], 
+    fretRange: [1, 3] 
   },
   { 
     day: 5, 
-    title: "D String: Linear 0-5", 
-    description: "Learn the first 5 frets of the D string: Eb, E, F, F#, G.", 
-    title_fr: "Corde Ré : Linéaire 0-5",
-    description_fr: "Apprenez les 5 premières frettes de la corde de Ré : Mib, Mi, Fa, Fa#, Sol.",
-    title_es: "Cuerda Re: Lineal 0-5",
-    description_es: "Aprende los primeros 5 trastes de la cuerda Re: Mib, Mi, Fa, Fa#, Sol.",
-    strings: [D], 
-    fretRange: [0, 5],
-    questionCount: 12
+    title: "G String: Frets 1-3", 
+    description: "Identify Ab, A, and Bb on the highest string.", 
+    title_fr: "Corde Sol : Frettes 1-3",
+    description_fr: "Identifiez Lab, La et Sib sur la corde la plus aiguë.",
+    title_es: "Cuerda Sol: Trastes 1-3",
+    description_es: "Identifica Lab, La y Sib en la cuerda más aguda.",
+    strings: [G], 
+    fretRange: [1, 3] 
   },
   { 
     day: 6, 
-    title: "G String: Linear 0-5", 
-    description: "Learn the first 5 frets of the G string: Ab, A, Bb, B, C.", 
-    title_fr: "Corde Sol : Linéaire 0-5",
-    description_fr: "Apprenez les 5 premières frettes de la corde de Sol : Lab, La, Sib, Si, Do.",
-    title_es: "Cuerda Sol: Lineal 0-5",
-    description_es: "Aprende los primeros 5 trastes de la cuerda Sol: Lab, La, Sib, Si, Do.",
-    strings: [G], 
-    fretRange: [0, 5],
-    questionCount: 12
+    title: "Low End Mix: E & A", 
+    description: "Combined drill for the lower strings (Frets 0-3).", 
+    title_fr: "Mix Graves : Mi & La",
+    description_fr: "Exercice combiné pour les cordes graves (Frettes 0-3).",
+    title_es: "Mezcla Grave: Mi y La",
+    description_es: "Ejercicio combinado para las cuerdas graves (Trastes 0-3).",
+    strings: [E, A], 
+    fretRange: [0, 3] 
   },
-
-  // --- PHASE 3: FIRST POSITION (0-5) - TWO STRINGS ---
   { 
     day: 7, 
-    title: "Low End Mix: B & E (0-5)", 
-    description: "Switching between the B and E strings in the first position.", 
-    title_fr: "Mélange Grave : Si & Mi (0-5)",
-    description_fr: "Alternez entre les cordes de Si et Mi en première position.",
-    title_es: "Mezcla Grave: Si y Mi (0-5)",
-    description_es: "Alterna entre las cuerdas Si y Mi en la primera posición.",
-    strings: [B, E], 
-    fretRange: [0, 5], 
-    isFiveStringOnly: true,
-    questionCount: 15
+    title: "High End Mix: D & G", 
+    description: "Combined drill for the upper strings (Frets 0-3).", 
+    title_fr: "Mix Aigus : Ré & Sol",
+    description_fr: "Exercice combiné pour les cordes aiguës (Frettes 0-3).",
+    title_es: "Mezcla Aguda: Re y Sol",
+    description_es: "Ejercicio combinado para las cuerdas agudas (Trastes 0-3).",
+    strings: [D, G], 
+    fretRange: [0, 3] 
   },
   { 
     day: 8, 
-    title: "Foundation Mix: E & A (0-5)", 
-    description: "Navigating the most common range for bass lines: E and A strings.", 
-    title_fr: "Mélange Fondamental : Mi & La (0-5)",
-    description_fr: "Naviguez dans le registre le plus commun : les cordes de Mi et La.",
-    title_es: "Mezcla Base: Mi y La (0-5)",
-    description_es: "Navega por el rango más común: las cuerdas Mi y La.",
-    strings: [E, A], 
-    fretRange: [0, 5],
-    questionCount: 15
+    title: "First Position Mastery", 
+    description: "All strings, Frets 0-4. The foundation of most basslines.", 
+    title_fr: "Maîtrise de la 1ère Position",
+    description_fr: "Toutes les cordes, Frettes 0-4. La base de la plupart des lignes de basse.",
+    title_es: "Maestría en Primera Posición",
+    description_es: "Todas las cuerdas, Trastes 0-4. La base de la mayoría de las líneas de bajo.",
+    strings: [E, A, D, G], 
+    fretRange: [0, 4] 
   },
+
+  // --- PHASE 2: MOVING UP (FRETS 5-8) ---
   { 
     day: 9, 
-    title: "Middle Mix: A & D (0-5)", 
-    description: "Connecting the middle register strings in first position.", 
-    title_fr: "Mélange Médium : La & Ré (0-5)",
-    description_fr: "Connectez les cordes du registre médium en première position.",
-    title_es: "Mezcla Media: La y Re (0-5)",
-    description_es: "Conecta las cuerdas del registro medio en la primera posición.",
-    strings: [A, D], 
-    fretRange: [0, 5],
-    questionCount: 15
+    title: "E String: The Middle Section", 
+    description: "Identify A, Bb, B, and C (Frets 5-8).", 
+    title_fr: "Corde Mi : Section Milieu",
+    description_fr: "Identifiez La, Sib, Si et Do (Frettes 5-8).",
+    title_es: "Cuerda Mi: Sección Media",
+    description_es: "Identifica La, Sib, Si y Do (Trastes 5-8).",
+    strings: [E], 
+    fretRange: [5, 8] 
   },
   { 
     day: 10, 
-    title: "High End Mix: D & G (0-5)", 
-    description: "Navigating the highest strings in first position.", 
-    title_fr: "Mélange Aigu : Ré & Sol (0-5)",
-    description_fr: "Naviguez sur les cordes les plus aiguës en première position.",
-    title_es: "Mezcla Aguda: Re y Sol (0-5)",
-    description_es: "Navega por las cuerdas más agudas en la primera posición.",
-    strings: [D, G], 
-    fretRange: [0, 5],
-    questionCount: 15
+    title: "A String: The Middle Section", 
+    description: "Focus on D, Eb, E, and F (Frets 5-8).", 
+    title_fr: "Corde La : Section Milieu",
+    description_fr: "Concentrez-vous sur Ré, Mib, Mi et Fa (Frettes 5-8).",
+    title_es: "Cuerda La: Sección Media",
+    description_es: "Céntrate en Re, Mib, Mi y Fa (Trastes 5-8).",
+    strings: [A], 
+    fretRange: [5, 8] 
   },
   { 
     day: 11, 
-    title: "Diagonal Jump: E & D (0-5)", 
-    description: "Practice jumping across a string in the low register.", 
-    title_fr: "Saut Diagonal : Mi & Ré (0-5)",
-    description_fr: "Entraînez-vous à sauter une corde dans le registre grave.",
-    title_es: "Salto Diagonal: Mi y Re (0-5)",
-    description_es: "Practica saltar una cuerda en el registro grave.",
-    strings: [E, D], 
-    fretRange: [0, 5],
-    questionCount: 15
+    title: "D String: The Middle Section", 
+    description: "Master G, Ab, A, and Bb (Frets 5-8).", 
+    title_fr: "Corde Ré : Section Milieu",
+    description_fr: "Maîtrisez Sol, Lab, La et Sib (Frettes 5-8).",
+    title_es: "Cuerda Re: Sección Media",
+    description_es: "Domina Sol, Lab, La y Sib (Trastes 5-8).",
+    strings: [D], 
+    fretRange: [5, 8] 
   },
   { 
     day: 12, 
-    title: "Diagonal Jump: A & G (0-5)", 
-    description: "Practice jumping across a string in the mid-high register.", 
-    title_fr: "Saut Diagonal : La & Sol (0-5)",
-    description_fr: "Entraînez-vous à sauter une corde dans le registre médium-aigu.",
-    title_es: "Salto Diagonal: La y Sol (0-5)",
-    description_es: "Practica saltar una cuerda en el registro medio-agudo.",
-    strings: [A, G], 
-    fretRange: [0, 5],
-    questionCount: 15
+    title: "G String: The Middle Section", 
+    description: "Identify C, Db, D, and Eb (Frets 5-8).", 
+    title_fr: "Corde Sol : Section Milieu",
+    description_fr: "Identifiez Do, Réb, Ré et Mib (Frettes 5-8).",
+    title_es: "Cuerda Sol: Sección Media",
+    description_es: "Identifica Do, Reb, Re y Mib (Trastes 5-8).",
+    strings: [G], 
+    fretRange: [5, 8] 
   },
-
-  // --- PHASE 4: FIRST POSITION (0-5) - ALL STRINGS ---
   { 
     day: 13, 
-    title: "Full Low Box Mastery (0-5)", 
-    description: "Any note, any string, within the first 5 frets. The core of the instrument.", 
-    title_fr: "Maîtrise du Bas du Manche (0-5)",
-    description_fr: "Toute note, toute corde, dans les 5 premières frettes. Le cœur de l'instrument.",
-    title_es: "Maestría del Traste 0-5",
-    description_es: "Cualquier nota, cualquier cuerda, dentro de los primeros 5 trastes.",
-    strings: [E, A, D, G, B], 
-    fretRange: [0, 5],
-    questionCount: 20
+    title: "Box Patterns: Frets 5-8", 
+    description: "Navigation drill in the middle of the neck.", 
+    title_fr: "Formes de Boîte : Frettes 5-8",
+    description_fr: "Exercice de navigation au milieu du manche.",
+    title_es: "Patrones de Caja: Trastes 5-8",
+    description_es: "Ejercicio de navegación en la mitad del mástil.",
+    strings: [E, A, D, G], 
+    fretRange: [5, 8] 
   },
 
-  // --- PHASE 5: MIDDLE POSITION (5-9) - ONE STRING ---
+  // --- PHASE 3: HIGHER GROUND (FRETS 9-12) ---
   { 
     day: 14, 
-    title: "B String: Middle 5-9", 
-    description: "Focus on the middle register of the B string.", 
-    title_fr: "Corde Si : Médium 5-9",
-    description_fr: "Concentrez-vous sur le registre médium de la corde de Si.",
-    title_es: "Cuerda Si: Medio 5-9",
-    description_es: "Concéntrate en el registro medio de la cuerda Si.",
-    strings: [B], 
-    fretRange: [5, 9], 
-    isFiveStringOnly: true,
-    questionCount: 15
+    title: "The Octave Threshold", 
+    description: "Learn notes on Frets 9-11 across all strings.", 
+    title_fr: "Le Seuil de l'Octave",
+    description_fr: "Apprenez les notes des frettes 9-11 sur toutes les cordes.",
+    title_es: "El Umbral de la Octava",
+    description_es: "Aprende las notas de los trastes 9-11 en todas las cuerdas.",
+    strings: [E, A, D, G], 
+    fretRange: [9, 11] 
   },
   { 
     day: 15, 
-    title: "E String: Middle 5-9", 
-    description: "Focus on the middle register of the E string.", 
-    title_fr: "Corde Mi : Médium 5-9",
-    description_fr: "Concentrez-vous sur le registre médium de la corde de Mi.",
-    title_es: "Cuerda Mi: Medio 5-9",
-    description_es: "Concéntrate en el registro medio de la cuerda Mi.",
-    strings: [E], 
-    fretRange: [5, 9],
-    questionCount: 15
+    title: "The 12th Fret Octaves", 
+    description: "Master the 12th fret. It mirrors your open strings!", 
+    title_fr: "Les Octaves de la 12ème Frette",
+    description_fr: "Maîtrisez la 12ème frette. Elle reflète vos cordes à vide !",
+    title_es: "Las Octavas del Traste 12",
+    description_es: "Domina el traste 12. ¡Es un espejo de tus cuerdas al aire!",
+    strings: [E, A, D, G], 
+    fretRange: [12, 12] 
   },
   { 
     day: 16, 
-    title: "A String: Middle 5-9", 
-    description: "Focus on the middle register of the A string.", 
-    title_fr: "Corde La : Médium 5-9",
-    description_fr: "Concentrez-vous sur le registre médium de la corde de La.",
-    title_es: "Cuerda La: Medio 5-9",
-    description_es: "Concéntrate en el registro medio de la cuerda La.",
-    strings: [A], 
-    fretRange: [5, 9],
-    questionCount: 15
+    title: "Upper E & A strings", 
+    description: "Identify notes between Frets 7 and 12 on the heavy strings.", 
+    title_fr: "Cordes Mi & La Supérieures",
+    description_fr: "Identifiez les notes entre les frettes 7 et 12 sur les cordes graves.",
+    title_es: "Cuerdas Mi y La Superiores",
+    description_es: "Identifica las notas entre los trastes 7 y 12 en las cuerdas graves.",
+    strings: [E, A], 
+    fretRange: [7, 12] 
   },
   { 
     day: 17, 
-    title: "D String: Middle 5-9", 
-    description: "Focus on the middle register of the D string.", 
-    title_fr: "Corde Ré : Médium 5-9",
-    description_fr: "Concentrez-vous sur le registre médium de la corde de Ré.",
-    title_es: "Cuerda Re: Medio 5-9",
-    description_es: "Concéntrate en el registro medio de la cuerda Re.",
-    strings: [D], 
-    fretRange: [5, 9],
-    questionCount: 15
-  },
-  { 
-    day: 18, 
-    title: "G String: Middle 5-9", 
-    description: "Focus on the middle register of the G string.", 
-    title_fr: "Corde Sol : Médium 5-9",
-    description_fr: "Concentrez-vous sur le registre médium de la corde de Sol.",
-    title_es: "Cuerda Sol: Medio 5-9",
-    description_es: "Concéntrate en el registro medio de la cuerda Sol.",
-    strings: [G], 
-    fretRange: [5, 9],
-    questionCount: 15
+    title: "Upper D & G strings", 
+    description: "Identify notes between Frets 7 and 12 on the melodic strings.", 
+    title_fr: "Cordes Ré & Sol Supérieures",
+    description_fr: "Identifiez les notes entre les frettes 7 et 12 sur les cordes aiguës.",
+    title_es: "Cuerdas Re y Sol Superiores",
+    description_es: "Identifica las notas entre los trastes 7 y 12 en las cuerdas melódicas.",
+    strings: [D, G], 
+    fretRange: [7, 12] 
   },
 
-  // --- PHASE 6: MIDDLE POSITION (5-9) - MIXED ---
+  // --- PHASE 4: HORIZONTAL MASTERY ---
+  { 
+    day: 18, 
+    title: "Horizontal E String", 
+    description: "Traverse the entire E string from Fret 0 to 12.", 
+    title_fr: "Corde Mi Horizontale",
+    description_fr: "Parcourez toute la corde Mi de la frette 0 à 12.",
+    title_es: "Cuerda Mi Horizontal",
+    description_es: "Recorre toda la cuerda Mi del traste 0 al 12.",
+    strings: [E], 
+    fretRange: [0, 12] 
+  },
   { 
     day: 19, 
-    title: "E & A Middle Mix (5-9)", 
-    description: "Combining the low strings in the middle position.", 
-    title_fr: "Mélange Grave Médium (5-9)",
-    description_fr: "Combinez les cordes graves dans la position centrale.",
-    title_es: "Mezcla Grave Media (5-9)",
-    description_es: "Combina las cuerdas graves en la posición central.",
-    strings: [E, A], 
-    fretRange: [5, 9],
-    questionCount: 20
+    title: "Horizontal A String", 
+    description: "Traverse the entire A string from Fret 0 to 12.", 
+    title_fr: "Corde La Horizontale",
+    description_fr: "Parcourez toute la corde La de la frette 0 à 12.",
+    title_es: "Cuerda La Horizontal",
+    description_es: "Recorre toda la cuerda La del traste 0 al 12.",
+    strings: [A], 
+    fretRange: [0, 12] 
   },
   { 
     day: 20, 
-    title: "D & G Middle Mix (5-9)", 
-    description: "Combining the high strings in the middle position.", 
-    title_fr: "Mélange Aigu Médium (5-9)",
-    description_fr: "Combinez les cordes aiguës dans la position centrale.",
-    title_es: "Mezcla Aguda Media (5-9)",
-    description_es: "Combina las cuerdas agudas en la posición central.",
-    strings: [D, G], 
-    fretRange: [5, 9],
-    questionCount: 20
+    title: "Horizontal D String", 
+    description: "Traverse the entire D string from Fret 0 to 12.", 
+    title_fr: "Corde Ré Horizontale",
+    description_fr: "Parcourez toute la corde Ré de la frette 0 à 12.",
+    title_es: "Cuerda Re Horizontal",
+    description_es: "Recorre toda la cuerda Re del traste 0 al 12.",
+    strings: [D], 
+    fretRange: [0, 12] 
   },
   { 
     day: 21, 
-    title: "Full Middle Box (5-9)", 
-    description: "Mastering the center of the neck across all strings.", 
-    title_fr: "Maîtrise du Centre du Manche (5-9)",
-    description_fr: "Maîtrisez le centre du manche sur toutes les cordes.",
-    title_es: "Maestría del Centro del Mástil (5-9)",
-    description_es: "Domina el centro del mástil en todas las cuerdas.",
-    strings: [E, A, D, G, B], 
-    fretRange: [5, 9],
-    questionCount: 25
+    title: "Horizontal G String", 
+    description: "Traverse the entire G string from Fret 0 to 12.", 
+    title_fr: "Corde Sol Horizontale",
+    description_fr: "Parcourez toute la corde Sol de la frette 0 à 12.",
+    title_es: "Cuerda Sol Horizontal",
+    description_es: "Recorre toda la cuerda Sol del traste 0 al 12.",
+    strings: [G], 
+    fretRange: [0, 12] 
   },
 
-  // --- PHASE 7: UPPER POSITION (9-12) - ONE STRING ---
+  // --- PHASE 5: SHARPS & FLATS FOCUS ---
   { 
     day: 22, 
-    title: "B String: Upper 9-12", 
-    description: "Focus on the upper register of the B string.", 
-    title_fr: "Corde Si : Aigu 9-12",
-    description_fr: "Concentrez-vous sur le registre aigu de la corde de Si.",
-    title_es: "Cuerda Si: Agudo 9-12",
-    description_es: "Concéntrate en el registro agudo de la cuerda Si.",
-    strings: [B], 
-    fretRange: [9, 12], 
-    isFiveStringOnly: true,
-    questionCount: 15
+    title: "Natural Notes Only", 
+    description: "Identify only C, D, E, F, G, A, B across the neck (0-12).", 
+    title_fr: "Notes Naturelles Uniquement",
+    description_fr: "Identifiez uniquement Do, Ré, Mi, Fa, Sol, La, Si sur le manche (0-12).",
+    title_es: "Solo Notas Naturales",
+    description_es: "Identifica solo Do, Re, Mi, Fa, Sol, La, Si en el mástil (0-12).",
+    strings: [E, A, D, G], 
+    fretRange: [0, 12], 
+    focusNotes: ["C", "D", "E", "F", "G", "A", "B"] 
   },
   { 
     day: 23, 
-    title: "E String: Upper 9-12", 
-    description: "Focus on the upper register of the E string (approaching the octave).", 
-    title_fr: "Corde Mi : Aigu 9-12",
-    description_fr: "Concentrez-vous sur le registre aigu de la corde de Mi (proche de l'octave).",
-    title_es: "Cuerda Mi: Agudo 9-12",
-    description_es: "Concéntrate en el registro agudo de la cuerda Mi (cerca de la octava).",
-    strings: [E], 
-    fretRange: [9, 12],
-    questionCount: 15
+    title: "Accidental Focus", 
+    description: "Focus on sharps and flats: C#, Eb, F#, Ab, Bb.", 
+    title_fr: "Focus Altérations",
+    description_fr: "Concentrez-vous sur les dièses et bémols : Do#, Mib, Fa#, Lab, Sib.",
+    title_es: "Enfoque en Accidentales",
+    description_es: "Céntrate en sostenidos y bemoles: Do#, Mib, Fa#, Lab, Sib.",
+    strings: [E, A, D, G], 
+    fretRange: [0, 12], 
+    focusNotes: ["C#", "D#", "F#", "G#", "A#"] 
   },
+
+  // --- PHASE 6: FULL NECK CHALLENGES ---
   { 
     day: 24, 
-    title: "A String: Upper 9-12", 
-    description: "Focus on the upper register of the A string.", 
-    title_fr: "Corde La : Aigu 9-12",
-    description_fr: "Concentrez-vous sur le registre aigu de la corde de La.",
-    title_es: "Cuerda La: Agudo 9-12",
-    description_es: "Concéntrate en el registro agudo de la cuerda La.",
-    strings: [A], 
-    fretRange: [9, 12],
-    questionCount: 15
+    title: "Lower Neck Full Mix", 
+    description: "Mixed strings and frets (0-7).", 
+    title_fr: "Mix Bas du Manche",
+    description_fr: "Mélange de cordes et de frettes (0-7).",
+    title_es: "Mezcla Inferior del Mástil",
+    description_es: "Mezcla de cuerdas y trastes (0-7).",
+    strings: [E, A, D, G], 
+    fretRange: [0, 7] 
   },
   { 
     day: 25, 
-    title: "D String: Upper 9-12", 
-    description: "Focus on the upper register of the D string.", 
-    title_fr: "Corde Ré : Aigu 9-12",
-    description_fr: "Concentrez-vous sur le registre aigu de la corde de Ré.",
-    title_es: "Cuerda Re: Agudo 9-12",
-    description_es: "Concéntrate en el registro agudo de la cuerda Re.",
-    strings: [D], 
-    fretRange: [9, 12],
-    questionCount: 15
+    title: "Upper Neck Full Mix", 
+    description: "Mixed strings and frets (7-12).", 
+    title_fr: "Mix Haut du Manche",
+    description_fr: "Mélange de cordes et de frettes (7-12).",
+    title_es: "Mezcla Superior del Mástil",
+    description_es: "Mezcla de cuerdas y trastes (7-12).",
+    strings: [E, A, D, G], 
+    fretRange: [7, 12] 
   },
   { 
     day: 26, 
-    title: "G String: Upper 9-12", 
-    description: "Focus on the upper register of the G string.", 
-    title_fr: "Corde Sol : Aigu 9-12",
-    description_fr: "Concentrez-vous sur le registre aigu de la corde de Sol.",
-    title_es: "Cuerda Sol: Agudo 9-12",
-    description_es: "Concéntrate en el registro agudo de la cuerda Sol.",
-    strings: [G], 
-    fretRange: [9, 12],
-    questionCount: 15
+    title: "Vertical Alignment", 
+    description: "Finding the same note across different strings.", 
+    title_fr: "Alignement Vertical",
+    description_fr: "Trouver la même note sur différentes cordes.",
+    title_es: "Alineación Vertical",
+    description_es: "Encontrar la misma nota en diferentes cuerdas.",
+    strings: [E, A, D, G], 
+    fretRange: [0, 12], 
+    questionCount: 15 
   },
-
-  // --- PHASE 8: UPPER POSITION (9-12) - MIXED ---
   { 
     day: 27, 
-    title: "Low Register Octave Mix (9-12)", 
-    description: "B and E strings in the high register.", 
-    title_fr: "Mélange Octave Grave (9-12)",
-    description_fr: "Cordes de Si et Mi dans le registre aigu.",
-    title_es: "Mezcla Octava Grave (9-12)",
-    description_es: "Cuerdas Si y Mi en el registro agudo.",
-    strings: [B, E], 
-    fretRange: [9, 12], 
-    isFiveStringOnly: true,
-    questionCount: 20
+    title: "The Speed Drill", 
+    description: "Fast-paced identification across the whole neck.", 
+    title_fr: "Exercice de Vitesse",
+    description_fr: "Identification rapide sur tout le manche.",
+    title_es: "Ejercicio de Velocidad",
+    description_es: "Identificación rápida en todo el mástil.",
+    strings: [E, A, D, G], 
+    fretRange: [0, 12], 
+    questionCount: 20 
   },
   { 
     day: 28, 
-    title: "A & D Upper Mix (9-12)", 
-    description: "Switching between A and D strings near the 12th fret.", 
-    title_fr: "Mélange La & Ré Aigu (9-12)",
-    description_fr: "Alternez entre La et Ré près de la 12ème frette.",
-    title_es: "Mezcla La y Re Agudo (9-12)",
-    description_es: "Alterna entre La y Re cerca del traste 12.",
-    strings: [A, D], 
-    fretRange: [9, 12],
-    questionCount: 20
+    title: "Dusty End: Above 12", 
+    description: "Explore the frets between 13 and 17.", 
+    title_fr: "Zone Poussiéreuse : Au-delà de 12",
+    description_fr: "Explorez les frettes entre 13 et 17.",
+    title_es: "El Final Polvoriento: Más allá de 12",
+    description_es: "Explora los trastes entre 13 y 17.",
+    strings: [E, A, D, G], 
+    fretRange: [13, 17] 
   },
   { 
     day: 29, 
-    title: "Full Upper Box (9-12)", 
-    description: "Mastering the range leading up to the octave.", 
-    title_fr: "Maîtrise du Haut du Manche (9-12)",
-    description_fr: "Maîtrisez la zone précédant l'octave.",
-    title_es: "Maestría del Alto Mástil (9-12)",
-    description_es: "Domina la zona antes de la octava.",
-    strings: [E, A, D, G, B], 
-    fretRange: [9, 12],
-    questionCount: 25
+    title: "The Extreme End", 
+    description: "Navigate frets 18 to 22. Maximum pitch tracking test!", 
+    title_fr: "L'Extrémité",
+    description_fr: "Naviguez des frettes 18 à 22. Test de détection maximum !",
+    title_es: "El Extremo",
+    description_es: "Navega por los trastes 18 a 22. ¡Prueba máxima de seguimiento!",
+    strings: [E, A, D, G], 
+    fretRange: [18, 22] 
   },
-
-  // --- PHASE 9: FULL STRING (0-12) ---
   { 
     day: 30, 
-    title: "The Whole B String (0-12)", 
-    description: "Full linear awareness from open to the octave on the B string.", 
-    title_fr: "Toute la corde de Si (0-12)",
-    description_fr: "Conscience linéaire totale de la corde de Si jusqu'à l'octave.",
-    title_es: "Toda la cuerda Si (0-12)",
-    description_es: "Conciencia lineal total de la cuerda Si hasta la octava.",
-    strings: [B], 
-    fretRange: [0, 12], 
-    isFiveStringOnly: true,
-    questionCount: 25
+    title: "Full Mastery Graduation", 
+    description: "Complete fretboard test (0-22). You are a master!", 
+    title_fr: "Diplôme de Maîtrise Totale",
+    description_fr: "Test complet du manche (0-22). Vous êtes un maître !",
+    title_es: "Graduación de Maestría Completa",
+    description_es: "Prueba completa del mástil (0-22). ¡Eres un maestro!",
+    strings: [E, A, D, G], 
+    fretRange: [0, 22], 
+    questionCount: 30 
   },
+
+  // --- PHASE 7: 5-STRING SPECIALS ---
   { 
     day: 31, 
-    title: "The Whole E String (0-12)", 
-    description: "Full linear awareness from open to the octave on the E string.", 
-    title_fr: "Toute la corde de Mi (0-12)",
-    description_fr: "Conscience linéaire totale de la corde de Mi jusqu'à l'octave.",
-    title_es: "Toda la cuerda Mi (0-12)",
-    description_es: "Conciencia lineal total de la cuerda Mi hasta la octava.",
-    strings: [E], 
-    fretRange: [0, 12],
-    questionCount: 25
+    title: "B String: The Foundations", 
+    description: "Focus on the low B string frets 0 to 4.", 
+    title_fr: "Corde Si : Les Fondations",
+    description_fr: "Concentrez-vous sur la corde Si grave, frettes 0 à 4.",
+    title_es: "Cuerda Si: Los Cimientos",
+    description_es: "Céntrate en la cuerda Si grave, trastes 0 a 4.",
+    strings: [B], 
+    fretRange: [0, 4], 
+    isFiveStringOnly: true 
   },
   { 
     day: 32, 
-    title: "The Whole A String (0-12)", 
-    description: "Full linear awareness from open to the octave on the A string.", 
-    title_fr: "Toute la corde de La (0-12)",
-    description_fr: "Conscience linéaire totale de la corde de La jusqu'à l'octave.",
-    title_es: "Toda la cuerda La (0-12)",
-    description_es: "Conciencia lineal total de la cuerda La hasta la octava.",
-    strings: [A], 
-    fretRange: [0, 12],
-    questionCount: 25
+    title: "B String: The Middle Section", 
+    description: "Navigate frets 5 to 9 on the low B string.", 
+    title_fr: "Corde Si : Section Milieu",
+    description_fr: "Naviguez des frettes 5 à 9 sur la corde Si grave.",
+    title_es: "Cuerda Si: Sección Media",
+    description_es: "Navega por los trastes 5 a 9 en la cuerda Si grave.",
+    strings: [B], 
+    fretRange: [5, 9], 
+    isFiveStringOnly: true 
   },
   { 
     day: 33, 
-    title: "The Whole D String (0-12)", 
-    description: "Full linear awareness from open to the octave on the D string.", 
-    title_fr: "Toute la corde de Ré (0-12)",
-    description_fr: "Conscience linéaire totale de la corde de Ré jusqu'à l'octave.",
-    title_es: "Toda la cuerda Re (0-12)",
-    description_es: "Conciencia lineal total de la cuerda Re hasta la octava.",
-    strings: [D], 
-    fretRange: [0, 12],
-    questionCount: 25
+    title: "B String: Full Length", 
+    description: "Traverse the entire B string (0-12).", 
+    title_fr: "Corde Si : Toute la Longueur",
+    description_fr: "Parcourez toute la corde Si (0-12).",
+    title_es: "Cuerda Si: Longitud Completa",
+    description_es: "Recorre toda la cuerda Si (0-12).",
+    strings: [B], 
+    fretRange: [0, 12], 
+    isFiveStringOnly: true 
   },
   { 
     day: 34, 
-    title: "The Whole G String (0-12)", 
-    description: "Full linear awareness from open to the octave on the G string.", 
-    title_fr: "Toute la corde de Sol (0-12)",
-    description_fr: "Conscience linéaire totale de la corde de Sol jusqu'à l'octave.",
-    title_es: "Toda la cuerda Sol (0-12)",
-    description_es: "Conciencia lineal total de la cuerda Sol hasta la octava.",
-    strings: [G], 
-    fretRange: [0, 12],
-    questionCount: 25
+    title: "Sub-Contra Mix: B & E", 
+    description: "Combined drill for the two lowest strings.", 
+    title_fr: "Mix Sub-Contra : Si & Mi",
+    description_fr: "Exercice combiné pour les deux cordes les plus graves.",
+    title_es: "Mezcla Sub-Contra: Si y Mi",
+    description_es: "Ejercicio combinado para las dos cuerdas más graves.",
+    strings: [B, E], 
+    fretRange: [0, 12], 
+    isFiveStringOnly: true 
   },
 
-  // --- PHASE 10: FULL NECK (0-12) ---
+  // --- PHASE 8: ADVANCED DRILLS & SEQUENCES ---
   { 
     day: 35, 
-    title: "Natural Notes Everywhere (0-12)", 
-    description: "Identify C, D, E, F, G, A, B anywhere on the neck up to fret 12.", 
-    title_fr: "Notes Naturelles Partout (0-12)",
-    description_fr: "Identifiez Do, Ré, Mi, Fa, Sol, La, Si partout jusqu'à la 12ème frette.",
-    title_es: "Notas Naturales en Todo el Mástil (0-12)",
-    description_es: "Identifica Do, Re, Mi, Fa, Sol, La, Si en todo el mástil hasta el traste 12.",
-    strings: [E, A, D, G, B], 
+    title: "The Octave Jumper", 
+    description: "Identify notes and their octaves across the neck.", 
+    title_fr: "Le Sauteur d'Octave",
+    description_fr: "Identifiez les notes et leurs octaves sur tout le manche.",
+    title_es: "El Saltador de Octavas",
+    description_es: "Identifica notas y sus octavas en todo el mástil.",
+    strings: [E, A, D, G], 
     fretRange: [0, 12], 
-    focusNotes: ["C", "D", "E", "F", "G", "A", "B"],
-    questionCount: 35
+    questionCount: 15 
   },
   { 
     day: 36, 
-    title: "Sharp & Flat Challenge (0-12)", 
-    description: "Focus exclusively on accidentals across all strings.", 
-    title_fr: "Défi Dièses & Bémols (0-12)",
-    description_fr: "Concentrez-vous exclusivement sur les altérations sur toutes les cordes.",
-    title_es: "Desafío de Sostenidos y Bemoles (0-12)",
-    description_es: "Concéntrate exclusivamente en las alteraciones en todas las cuerdas.",
-    strings: [E, A, D, G, B], 
+    title: "The Chromatic Challenge", 
+    description: "Moving in half-steps across strings.", 
+    title_fr: "Le Défi Chromatique",
+    description_fr: "Déplacement par demi-tons à travers les cordes.",
+    title_es: "El Desafío Cromático",
+    description_es: "Desplazamiento por semitonos a través de las cuerdas.",
+    strings: [E, A, D, G], 
     fretRange: [0, 12], 
-    focusNotes: ["C#", "D#", "F#", "G#", "A#"],
-    questionCount: 30
+    questionCount: 20 
   },
   { 
     day: 37, 
-    title: "Full Fretboard Fluency (0-12)", 
-    description: "Complete identification drill across the first 12 frets.", 
-    title_fr: "Fluidité Totale (0-12)",
-    description_fr: "Exercice d'identification complet sur les 12 premières frettes.",
-    title_es: "Fluidez Total (0-12)",
-    description_es: "Ejercicio de identificación completo en los primeros 12 trastes.",
-    strings: [E, A, D, G, B], 
-    fretRange: [0, 12],
-    questionCount: 40
+    title: "Fifth Interval Drill", 
+    description: "Finding fifths vertically across the fretboard.", 
+    title_fr: "Exercice de Quintes",
+    description_fr: "Trouver les quintes verticalement sur le manche.",
+    title_es: "Ejercicio de Quintas",
+    description_es: "Encontrar quintas verticalmente en el diapasón.",
+    strings: [E, A, D, G], 
+    fretRange: [0, 12] 
   },
-
-  // --- PHASE 11: BEYOND THE 12th FRET ---
   { 
     day: 38, 
-    title: "Upper Neck: 12-15", 
-    description: "Learning the 'dusty' end of the neck. Notice the octave repetition.", 
-    title_fr: "Haut du Manche : 12-15",
-    description_fr: "Apprenez le bout du manche. Notez la répétition à l'octave.",
-    title_es: "Alto Mástil: 12-15",
-    description_es: "Aprende el final del mástil. Observa la repetición de octava.",
-    strings: [E, A, D, G, B], 
-    fretRange: [12, 15],
-    questionCount: 20
+    title: "Low Frequency Stability", 
+    description: "Specialized drill for notes below A1.", 
+    title_fr: "Stabilité Basse Fréquence",
+    description_fr: "Exercice spécialisé pour les notes en dessous du La1.",
+    title_es: "Estabilidad de Baja Frecuencia",
+    description_es: "Ejercicio especializado para notas por debajo de La1.",
+    strings: [E, B], 
+    fretRange: [0, 5] 
   },
   { 
     day: 39, 
-    title: "Upper Neck: 15-18", 
-    description: "Moving further up the fretboard.", 
-    title_fr: "Haut du Manche : 15-18",
-    description_fr: "Montez encore plus haut sur le manche.",
-    title_es: "Alto Mástil: 15-18",
-    description_es: "Sube aún más por el mástil.",
-    strings: [E, A, D, G, B], 
-    fretRange: [15, 18],
-    questionCount: 20
+    title: "The High Range Soloist", 
+    description: "Navigate notes above Fret 12 on upper strings.", 
+    title_fr: "Le Soliste des Aigus",
+    description_fr: "Naviguez les notes au-delà de la frette 12 sur les cordes aiguës.",
+    title_es: "El Solista de Rango Alto",
+    description_es: "Navega por las notas por encima del traste 12 en las cuerdas superiores.",
+    strings: [D, G], 
+    fretRange: [12, 22] 
   },
   { 
     day: 40, 
-    title: "The Final Frets: 18-24", 
-    description: "Mastering the highest possible notes on your instrument.", 
-    title_fr: "Les dernières frettes : 18-24",
-    description_fr: "Maîtrisez les notes les plus aiguës de votre instrument.",
-    title_es: "Los últimos trastes: 18-24",
-    description_es: "Domina las notas más agudas de tu instrumento.",
+    title: "Final Marathon 1", 
+    description: "50 notes as fast as possible. Lower neck.", 
+    title_fr: "Marathon Final 1",
+    description_fr: "50 notes le plus vite possible. Bas du manche.",
+    title_es: "Maratón Final 1",
+    description_es: "50 notas lo más rápido posible. Parte inferior del mástil.",
     strings: [E, A, D, G, B], 
-    fretRange: [18, 24],
-    questionCount: 20
+    fretRange: [0, 7], 
+    questionCount: 50 
   },
-
-  // --- PHASE 12: FINAL CHALLENGE ---
   { 
     day: 41, 
-    title: "Fretboard Master Certification", 
-    description: "The ultimate test. Any note, any string, full neck. Speed and accuracy are vital.", 
-    title_fr: "Certification Maître du Manche",
-    description_fr: "Le test ultime. Toute note, toute corde, tout le manche.",
-    title_es: "Certificación Maestro del Mástil",
-    description_es: "La prueba definitiva. Cualquier nota, cualquier cuerda, todo el mástil.",
+    title: "Final Marathon 2", 
+    description: "50 notes as fast as possible. Upper neck.", 
+    title_fr: "Marathon Final 2",
+    description_fr: "50 notes le plus vite possible. Haut du manche.",
+    title_es: "Maratón Final 2",
+    description_es: "50 notas lo más rápido posible. Parte superior del mástil.",
     strings: [E, A, D, G, B], 
-    fretRange: [0, 24],
-    questionCount: 50
-  },
+    fretRange: [8, 22], 
+    questionCount: 50 
+  }
 ];
 
 export const PENTATONIC_PROGRAM: DayTask[] = Array.from({ length: 40 }, (_, i) => {
