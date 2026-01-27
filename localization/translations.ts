@@ -130,6 +130,7 @@ export const translations: Record<AppLanguage, any> = {
       tryAgain: "TRY AGAIN",
       playNextNote: "PLAY THE NEXT NOTE",
       listenAgain: "Listen Again",
+      speed: "Playback Speed",
       tipFooter: "Tip: In this mode, the melody is randomized to a new root each time you start the session. Focus on relative intervals!"
     },
     rhythm: {
@@ -450,6 +451,7 @@ export const translations: Record<AppLanguage, any> = {
       tryAgain: "RÉESSAYEZ",
       playNextNote: "JOUEZ LA NOTE SUIVANTE",
       listenAgain: "Réécouter",
+      speed: "Vitesse de lecture",
       tipFooter: "Astuce : Dans ce mode, la mélodie est transposée à une tonique aléatoire à chaque session. Concentrez-vous sur les intervalles relatifs !"
     },
     rhythm: {
@@ -769,6 +771,7 @@ export const translations: Record<AppLanguage, any> = {
       tryAgain: "INTÉNTALO DE NUEVO",
       playNextNote: "TOCA LA SIGUIENTE NOTA",
       listenAgain: "Escuchar de nuevo",
+      speed: "Velocidad de reproducción",
       tipFooter: "Consejo: En este modo, la melodía se transporta a una tónica aleatoria en cada sesión. ¡Céntrate en los intervalos relativos!"
     },
     rhythm: {
@@ -793,7 +796,7 @@ export const translations: Record<AppLanguage, any> = {
       intro: 'Memorizar el mástil es una batalla contra el olvido. El SRS optimiza tu práctica pidiéndote que recuerdes las notas justo cuando estás a punto de olvidarlas.',
       curveTitle: 'La Courve de l\'Oubli',
       curveDesc: 'Cada vez que recuerdas una nota correctamente, el tiempo que tardas en olvidarla se duplica. Nuestro sistema lo rastrea automáticamente.',
-      levelsTitle: 'Niveles de Progresión',
+      levelsTitle: 'Niveeles de Progresión',
       l1: 'Level 1: Nuevo conocimiento (1 día)',
       l2: 'Nivel 2: Refuerzo (3 días)',
       l3: 'Nivel 3: Intermedio (7 días)',

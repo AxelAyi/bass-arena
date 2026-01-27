@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Box, Typography, Button, Container, Paper, Stack, alpha, useTheme, Fade, IconButton, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Container, Paper, Stack, alpha, useTheme, Fade, IconButton, CircularProgress, Chip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PlayCircleFilledIcon from '@mui/icons-material/PlayCircleFilled';
 import MicIcon from '@mui/icons-material/Mic';
@@ -7,6 +7,7 @@ import HearingIcon from '@mui/icons-material/Hearing';
 import ReplayIcon from '@mui/icons-material/Replay';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import SpeedIcon from '@mui/icons-material/Speed';
 
 import { useStore } from '../state/store';
 import { AudioEngine, AudioStats } from '../audio/audioEngine';
@@ -40,6 +41,7 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
   const [currentNoteIndex, setCurrentNoteIndex] = useState(0);
   const [stabilityCounter, setStabilityCounter] = useState(0);
   const [isResetting, setIsResetting] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<1 | 2 | 4>(1);
   
   // Scoring / Performance Refs
   const turnStartTimeRef = useRef<number>(0);
@@ -229,7 +231,8 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
       }
     }
 
-    await audioEngineRef.current.playSequence(activeSequence, 70);
+    // Default BPM is 70. Apply multiplier.
+    await audioEngineRef.current.playSequence(activeSequence, 70 * playbackSpeed);
     turnStartTimeRef.current = Date.now();
     setGameState('USER_TURN');
   };
@@ -273,6 +276,8 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
     );
   }
 
+  const speedOptions: (1 | 2 | 4)[] = [1, 2, 4];
+
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Stack spacing={4} alignItems="center">
@@ -303,9 +308,29 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
           }}
         >
           {gameState === 'IDLE' && (activeSequence.length > 0) && (
-            <Stack spacing={3} alignItems="center">
+            <Stack spacing={4} alignItems="center">
               <HearingIcon sx={{ fontSize: 80, color: 'divider' }} />
               <Typography variant="h6" fontWeight="800" color="textSecondary">{et.listenPrompt}</Typography>
+              
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', mb: 1.5, display: 'block', letterSpacing: 1, opacity: 0.7 }}>
+                  {et.speed}
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  {speedOptions.map(s => (
+                    <Chip 
+                      key={s}
+                      label={`x${s}`}
+                      onClick={() => setPlaybackSpeed(s)}
+                      variant={playbackSpeed === s ? "filled" : "outlined"}
+                      color={playbackSpeed === s ? "primary" : "default"}
+                      sx={{ fontWeight: 900, width: 60, borderRadius: 1.5 }}
+                      icon={playbackSpeed === s ? <SpeedIcon sx={{ fontSize: '14px !important' }} /> : undefined}
+                    />
+                  ))}
+                </Stack>
+              </Box>
+
               <Button 
                 variant="contained" 
                 size="large" 
@@ -326,7 +351,7 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
               </Box>
               <Typography variant="h6" fontWeight="800">{et.listening}</Typography>
               <Typography variant="caption" sx={{ letterSpacing: 2, textTransform: 'uppercase', opacity: 0.6 }}>
-                Memorize the intervals...
+                Memorize the intervals... (x{playbackSpeed})
               </Typography>
             </Stack>
           )}
@@ -398,15 +423,30 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
                 </Box>
               </Box>
 
-              <Button 
-                variant="outlined" 
-                startIcon={<ReplayIcon />} 
-                onClick={playReference}
-                size="small"
-                sx={{ borderRadius: 10, px: 3 }}
-              >
-                {et.listenAgain}
-              </Button>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Button 
+                  variant="outlined" 
+                  startIcon={<ReplayIcon />} 
+                  onClick={playReference}
+                  size="small"
+                  sx={{ borderRadius: 10, px: 3 }}
+                >
+                  {et.listenAgain}
+                </Button>
+                <Stack direction="row" spacing={0.5}>
+                  {speedOptions.map(s => (
+                    <Chip 
+                      key={s}
+                      label={`x${s}`}
+                      onClick={() => setPlaybackSpeed(s)}
+                      size="small"
+                      variant={playbackSpeed === s ? "filled" : "outlined"}
+                      color={playbackSpeed === s ? "primary" : "default"}
+                      sx={{ fontWeight: 800, fontSize: '0.65rem' }}
+                    />
+                  ))}
+                </Stack>
+              </Stack>
             </Stack>
           )}
         </Paper>
