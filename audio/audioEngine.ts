@@ -83,8 +83,6 @@ export class AudioEngine {
         const inputData = e.inputBuffer.getChannelData(0);
         const rms = calculateRMS(inputData);
         
-        // Fix: Basic onset detection logic - check for significant volume jump compared to last frame
-        const isOnset = rms > this.lastRMS * 1.5 && rms > 0.005;
         this.lastRMS = rms;
 
         const pitchFreq = detectPitchYIN(inputData, this.audioContext.sampleRate, 0.1);
@@ -95,7 +93,6 @@ export class AudioEngine {
           rms,
           timestamp: Date.now(),
           activeDeviceLabel,
-          isOnset // Added property
         });
       };
 
