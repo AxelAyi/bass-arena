@@ -48,58 +48,70 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
   const mistakesRef = useRef<number>(0);
   const finalMetricsRef = useRef({ score: 0, totalTime: 0, mistakes: 0 });
 
-  // Dynamic sequence state to handle per-session root randomization
+  // Dynamic sequence state
   const [activeSequence, setActiveSequence] = useState<number[]>([]);
 
   const audioEngineRef = useRef<AudioEngine | null>(null);
   const stabilityCheckRef = useRef<number | null>(null);
   const wrongNoteCheckRef = useRef<number | null>(null);
   
-  // Logic to prevent sustain being counted as a new note
+  // Refractory and Attack logic refs
   const isWaitingForNewAttackRef = useRef<boolean>(false);
   const lastCaughtMidiRef = useRef<number | null>(null);
+  const peakRmsSinceCaptureRef = useRef<number>(0);
+  const lastCaptureTimeRef = useRef<number>(0);
   
-  // Ref to handle stale closures in AudioEngine callback
   const processRef = useRef<(stats: AudioStats) => void>(() => {});
 
-  /**
-   * Transposes a sequence to a random root note.
-   * Ensures the resulting sequence stays within a playable bass range (MIDI 23-52).
-   */
   const randomizeSequenceRoot = useCallback((baseSeq: number[]) => {
     if (baseSeq.length === 0) return [];
-    
-    // Calculate current bounds
     const minMidi = Math.min(...baseSeq);
     const maxMidi = Math.max(...baseSeq);
-    
-    // Bass range bounds (roughly B0 to E3)
     const BASS_MIN = settings.isFiveString ? 23 : 28;
     const BASS_MAX = 52; 
-
-    // Possible transposition range
     const minShift = BASS_MIN - minMidi;
     const maxShift = BASS_MAX - maxMidi;
-
-    // Pick a random shift within the valid range
     const shift = Math.floor(Math.random() * (maxShift - minShift + 1)) + minShift;
-    
     return baseSeq.map(n => n + shift);
   }, [settings.isFiveString]);
 
-  // Initialize randomized sequence on mount
   useEffect(() => {
     setActiveSequence(randomizeSequenceRoot(sequence));
   }, [sequence, randomizeSequenceRoot]);
+
+  const triggerNextNote = (midi: number, rms: number) => {
+    const now = Date.now();
+    
+    // Refractory period: refuse to trigger a new note within 150ms of the last capture
+    if (now - lastCaptureTimeRef.current < 150) return;
+
+    const nextIndex = currentNoteIndex + 1;
+    lastCaughtMidiRef.current = midi;
+    lastCaptureTimeRef.current = now;
+    isWaitingForNewAttackRef.current = true;
+    peakRmsSinceCaptureRef.current = rms;
+    
+    setCurrentNoteIndex(nextIndex);
+    setStabilityCounter(0);
+    stabilityCheckRef.current = null;
+
+    if (nextIndex >= activeSequence.length) {
+      validateFullSequence();
+    } else {
+      setFeedback(et.feedbackNoteCaught);
+    }
+  };
 
   const handleAudioProcess = useCallback((stats: AudioStats) => {
     setDetected(stats);
 
     const isActive = stats.rms >= settings.rmsThreshold;
+    
     if (!isActive) {
       setStabilityCounter(0);
       stabilityCheckRef.current = null;
       wrongNoteCheckRef.current = null;
+      // Dropping below gate is a clear "reset" of plucking state
       isWaitingForNewAttackRef.current = false;
       return;
     }
@@ -110,14 +122,26 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
       return;
     }
 
+    // Adaptive timings
+    const speedMultiplier = playbackSpeed === 4 ? 0.4 : (playbackSpeed === 2 ? 0.7 : 1.0);
+    const effectiveStabilityMs = Math.max(10, settings.stabilityMs * speedMultiplier);
+    const effectiveWrongNoteMs = Math.max(50, 150 * speedMultiplier);
+
+    // --- ATTACK GUARD LOGIC ---
     if (isWaitingForNewAttackRef.current) {
       const isNewPluck = stats.isOnset;
       const isPitchChanged = lastCaughtMidiRef.current !== null && 
                              Math.abs(stats.pitch.midi - lastCaughtMidiRef.current) > 0.8;
       
-      if (isNewPluck || isPitchChanged) {
+      // Volume DIP detection
+      const isVolumeDip = peakRmsSinceCaptureRef.current > 0 && stats.rms < peakRmsSinceCaptureRef.current * 0.55;
+
+      // Logic: Drop the guard if there is a NEW pluck, OR if the pitch clearly moved, OR if there was a deep volume dip followed by recovery
+      if (isNewPluck || isPitchChanged || isVolumeDip) {
         isWaitingForNewAttackRef.current = false;
+        peakRmsSinceCaptureRef.current = stats.rms;
       } else {
+        peakRmsSinceCaptureRef.current = Math.max(peakRmsSinceCaptureRef.current, stats.rms);
         return;
       }
     }
@@ -127,52 +151,68 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
 
     if (isValid) {
       wrongNoteCheckRef.current = null;
+      
+      // If volume is decaying sharply, it's sustain, not intent.
+      // Ignore if derivative is negative and we aren't already tracking stability.
+      if (stats.rmsDerivative && stats.rmsDerivative < -0.001 && stabilityCheckRef.current === null) {
+        return;
+      }
+
+      // Fast track validation for clear pitch transitions
+      const isClearTransition = lastCaughtMidiRef.current !== null && 
+                                Math.abs(stats.pitch.midi - lastCaughtMidiRef.current) > 0.8;
+
+      if (isClearTransition) {
+        triggerNextNote(stats.pitch.midi, stats.rms);
+        return;
+      }
+
       if (stabilityCheckRef.current === null) {
         stabilityCheckRef.current = Date.now();
         setFeedback(currentNoteIndex > 0 ? et.feedbackAlmost : et.feedbackStart);
         setIsResetting(false);
       } else {
         const elapsed = Date.now() - stabilityCheckRef.current;
-        const progress = Math.min(100, (elapsed / settings.stabilityMs) * 100);
+        const progress = Math.min(100, (elapsed / effectiveStabilityMs) * 100);
         setStabilityCounter(progress);
 
-        if (elapsed >= settings.stabilityMs) {
-          const nextIndex = currentNoteIndex + 1;
-          lastCaughtMidiRef.current = stats.pitch.midi;
-          isWaitingForNewAttackRef.current = true;
-          
-          setCurrentNoteIndex(nextIndex);
-          setStabilityCounter(0);
-          stabilityCheckRef.current = null;
-
-          if (nextIndex >= activeSequence.length) {
-            validateFullSequence();
-          } else {
-            setFeedback(et.feedbackNoteCaught);
-          }
+        if (elapsed >= effectiveStabilityMs) {
+          triggerNextNote(stats.pitch.midi, stats.rms);
         }
       }
     } else {
+        // --- SUSTAIN FILTERING FOR WRONG NOTES ---
+        if (currentNoteIndex > 0) {
+          const previousMidi = activeSequence[currentNoteIndex - 1];
+          const isJustSustainOfPrevious = validateNote(stats.pitch.midi, previousMidi, settings.strictOctave);
+          
+          // If it's just the previous note sustaining and no new pluck has occurred, ignore it
+          if (isJustSustainOfPrevious && !stats.isOnset) {
+            setStabilityCounter(0);
+            stabilityCheckRef.current = null;
+            return;
+          }
+        }
+
         setStabilityCounter(0);
         stabilityCheckRef.current = null;
 
         if (wrongNoteCheckRef.current === null) {
           wrongNoteCheckRef.current = Date.now();
-        } else if (Date.now() - wrongNoteCheckRef.current > 150) {
+        } else if (Date.now() - wrongNoteCheckRef.current > effectiveWrongNoteMs) {
           if (currentNoteIndex > 0) {
             mistakesRef.current += 1;
-            // Reset progress to 0 on wrong note
             setCurrentNoteIndex(0);
             setFeedback(et.feedbackWrong);
             setIsResetting(true);
             isWaitingForNewAttackRef.current = false;
             lastCaughtMidiRef.current = null;
-            setTimeout(() => setIsResetting(false), 1500);
+            setTimeout(() => setIsResetting(false), 1200);
           }
           wrongNoteCheckRef.current = null;
         }
     }
-  }, [activeSequence, currentNoteIndex, settings, et]);
+  }, [activeSequence, currentNoteIndex, settings, et, playbackSpeed]);
 
   useEffect(() => {
     processRef.current = (stats: AudioStats) => {
@@ -187,17 +227,11 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
   const validateFullSequence = () => {
     const totalTime = (Date.now() - turnStartTimeRef.current) / 1000;
     const mistakes = mistakesRef.current;
-    
-    // Scoring logic for Ear Training:
-    // Start with 100 points.
-    // -15 points per mistake.
-    // -2 points per second over par (par = notes * 2.5 seconds).
-    const parTime = activeSequence.length * 2.5;
+    const parTime = activeSequence.length * (2.5 / playbackSpeed);
     const timePenalty = Math.max(0, (totalTime - parTime) * 2);
     const finalScore = Math.max(0, Math.round(100 - (mistakes * 15) - timePenalty));
 
     finalMetricsRef.current = { score: finalScore, totalTime, mistakes };
-
     setGameState('FINISHED');
     setFeedback(et.feedbackPerfect);
     
@@ -220,6 +254,8 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
     setIsResetting(false);
     isWaitingForNewAttackRef.current = false;
     lastCaughtMidiRef.current = null;
+    peakRmsSinceCaptureRef.current = 0;
+    lastCaptureTimeRef.current = 0;
     mistakesRef.current = 0;
 
     if (!audioEngineRef.current) {
@@ -231,7 +267,6 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
       }
     }
 
-    // Default BPM is 70. Apply multiplier.
     await audioEngineRef.current.playSequence(activeSequence, 70 * playbackSpeed);
     turnStartTimeRef.current = Date.now();
     setGameState('USER_TURN');
@@ -264,8 +299,8 @@ const EarTrainingSessionRunner: React.FC<EarTrainingSessionRunnerProps> = ({
           score: finalMetricsRef.current.score, 
           totalTime: finalMetricsRef.current.totalTime,
           mistakes: finalMetricsRef.current.mistakes,
-          accuracy: 100, // Dummy for legacy, unused in ET mode
-          avgTime: 0,    // Dummy for legacy, unused in ET mode
+          accuracy: 100, 
+          avgTime: 0,    
           isEarTraining: true,
           failedNotes: [] 
         }} 

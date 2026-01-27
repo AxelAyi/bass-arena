@@ -7,6 +7,7 @@ export interface AudioStats {
   timestamp: number;
   activeDeviceLabel?: string;
   isOnset?: boolean;
+  rmsDerivative?: number;
 }
 
 export class AudioEngine {
@@ -19,8 +20,9 @@ export class AudioEngine {
   private compressor: DynamicsCompressorNode | null = null;
   private onProcess: (stats: AudioStats) => void;
 
-  private bufferSize = 4096; 
+  private bufferSize = 2048; 
   private lastRMS = 0;
+  private rmsHistory: number[] = [0, 0, 0];
 
   constructor(onProcess: (stats: AudioStats) => void) {
     this.onProcess = onProcess;
@@ -50,7 +52,6 @@ export class AudioEngine {
         await this.audioContext.resume();
       }
 
-      // Input chain
       this.source = this.audioContext.createMediaStreamSource(this.stream);
 
       this.filter = this.audioContext.createBiquadFilter();
@@ -64,7 +65,6 @@ export class AudioEngine {
       this.filter.connect(this.analyzer);
       this.analyzer.connect(this.audioContext.destination);
 
-      // Output chain for synthesis
       this.compressor = this.audioContext.createDynamicsCompressor();
       this.compressor.threshold.setValueAtTime(-24, this.audioContext.currentTime);
       this.compressor.knee.setValueAtTime(30, this.audioContext.currentTime);
@@ -81,7 +81,16 @@ export class AudioEngine {
         const inputData = e.inputBuffer.getChannelData(0);
         const rms = calculateRMS(inputData);
         
-        const isOnset = rms > this.lastRMS * 1.5 && rms > 0.005;
+        // Track RMS history for a short-term derivative
+        this.rmsHistory.push(rms);
+        this.rmsHistory.shift();
+        
+        const avgPrevRms = (this.rmsHistory[0] + this.rmsHistory[1]) / 2;
+        const derivative = rms - avgPrevRms;
+
+        // "Attack" is defined as a sharp positive spike in volume relative to recent context
+        const isOnset = derivative > 0.005 && rms > this.lastRMS * 1.4;
+        
         this.lastRMS = rms;
 
         const pitchFreq = detectPitchYIN(inputData, this.audioContext.sampleRate, 0.1);
@@ -92,7 +101,8 @@ export class AudioEngine {
           rms,
           timestamp: Date.now(),
           activeDeviceLabel,
-          isOnset
+          isOnset,
+          rmsDerivative: derivative
         });
       };
 
@@ -104,70 +114,54 @@ export class AudioEngine {
     }
   }
 
-  /**
-   * Refined synth generating a 'Classic Electric Bass' timbre.
-   * Mixes fundamental weight with vintage string growl and plucky dynamics.
-   */
   playBassNote(midi: number, time: number = 0) {
     if (!this.audioContext || !this.compressor) return;
     const ctx = this.audioContext;
     const startTime = time || ctx.currentTime;
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
 
-    // 1. Pure Fundamental (Sine) - Provides the solid "thump"
     const fundamental = ctx.createOscillator();
     fundamental.type = 'sine';
     fundamental.frequency.setValueAtTime(freq, startTime);
 
-    // 2. Harmonic Growl (Filtered Sawtooth) - Mimics the string vibration texture
     const harmonics = ctx.createOscillator();
     harmonics.type = 'sawtooth';
     harmonics.frequency.setValueAtTime(freq, startTime);
 
-    // 3. Vintage Warmth (Triangle) - Softens the sound and adds body
     const body = ctx.createOscillator();
     body.type = 'triangle';
     body.frequency.setValueAtTime(freq, startTime);
 
-    // Filter Chain
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    // Dynamic Filter Envelope: Starts bright (pluck) and closes fast (string damping)
     filter.frequency.setValueAtTime(1000, startTime);
     filter.frequency.exponentialRampToValueAtTime(120, startTime + 0.6);
     filter.Q.setValueAtTime(2, startTime);
     filter.Q.linearRampToValueAtTime(1, startTime + 0.4);
 
-    // Gain Nodes for mixing
     const masterGain = ctx.createGain();
     const harmGain = ctx.createGain();
     
-    harmGain.gain.setValueAtTime(0.12, startTime); // Subtle growl
+    harmGain.gain.setValueAtTime(0.12, startTime); 
     harmGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.8);
 
-    // Amplitude Envelope
     masterGain.gain.setValueAtTime(0, startTime);
-    masterGain.gain.linearRampToValueAtTime(0.7, startTime + 0.02); // Plucky attack
-    masterGain.gain.exponentialRampToValueAtTime(0.001, startTime + 2.5); // Natural ring-out
+    masterGain.gain.linearRampToValueAtTime(0.7, startTime + 0.02); 
+    masterGain.gain.exponentialRampToValueAtTime(0.001, startTime + 2.5); 
 
-    // Connections
     fundamental.connect(filter);
     body.connect(filter);
-    
     harmonics.connect(harmGain);
     harmGain.connect(filter);
-    
     filter.connect(masterGain);
     masterGain.connect(this.compressor);
 
-    // Start/Stop
     fundamental.start(startTime);
     body.start(startTime);
     harmonics.start(startTime);
-
     fundamental.stop(startTime + 3);
     body.stop(startTime + 3);
-    harmonics.stop(startTime + 1); // Kill harmonics early for that "vintage flatwounds" feel
+    harmonics.stop(startTime + 1); 
   }
 
   async playSequence(sequence: number[], bpm: number = 80): Promise<void> {
