@@ -80,7 +80,7 @@ const Landing: React.FC = () => {
               animation: `${float} 3s ease-in-out infinite`
             }}
           >
-            Science-Backed Fretboard Mastery
+            A Simple Tool for Daily Practice
           </Box>
           <Typography 
             variant="h1" 

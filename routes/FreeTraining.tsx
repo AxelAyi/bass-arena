@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, Typography, Button, Paper, Slider, FormGroup, FormControlLabel, Checkbox, Stack, useTheme, MenuItem, Select, FormControl } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import * as ReactRouterDOM from 'react-router-dom';
@@ -33,6 +34,9 @@ const FreeTraining: React.FC = () => {
   const [sessionTitle, setSessionTitle] = useState(t.title);
   const [micDialogOpen, setMicDialogOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<'custom' | 'weak'>('custom');
+
+  // Tracks the current active session type to prevent re-triggering logic when global state updates
+  const lastLaunchedRef = useRef<string | null>(null);
 
   // Overlay State managed here for shared alignment
   const [scaleType, setScaleType] = useState<ScaleType>('none');
@@ -85,6 +89,7 @@ const FreeTraining: React.FC = () => {
         setQuestions(finalQuestions);
         setSessionTitle(t.title);
     }
+    lastLaunchedRef.current = customQs ? 'weak-spots' : 'custom';
     setSessionKey(prev => prev + 1);
   }, [fretRange, selectedStrings, questionCount, settings.isFiveString, t.title]);
 
@@ -124,8 +129,17 @@ const FreeTraining: React.FC = () => {
     executeSession(finalWeakQs, t.fixWeakSpots);
   }, [settings.isFiveString, mastery, settings.timeLimit, executeSession, t.fixWeakSpots, t.maintenanceDrill]);
 
-  // Route Handling
+  // Route Handling - Synchronized launch
   useEffect(() => {
+    if (!sessionType) {
+      setQuestions([]);
+      lastLaunchedRef.current = null;
+      return;
+    }
+
+    // Skip if already launched this session type
+    if (lastLaunchedRef.current === sessionType) return;
+
     if (sessionType === 'custom') {
       if (isMicEnabled) {
         executeSession();

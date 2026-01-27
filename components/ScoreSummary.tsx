@@ -25,6 +25,7 @@ const ScoreSummary: React.FC<ScoreSummaryProps> = ({ result, onClose, onReplay, 
 
   const failedNotes = result.failedNotes || [];
   const sessionTitle = result.title || '';
+  const isEarTraining = result.isEarTraining;
 
   return (
     <Paper sx={{ p: 3, borderRadius: 2, maxWidth: 500, mx: 'auto', mt: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -42,14 +43,14 @@ const ScoreSummary: React.FC<ScoreSummaryProps> = ({ result, onClose, onReplay, 
           <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>{t.totalScore}</Typography>
         </Grid>
         <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
-          <CheckCircleOutlineIcon color="success" sx={{ fontSize: 24, mb: 0.5 }} />
-          <Typography variant="h6" fontWeight="bold">{result.accuracy.toFixed(0)}%</Typography>
-          <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>{t.accuracy}</Typography>
+          <CheckCircleOutlineIcon color={isEarTraining ? "error" : "success"} sx={{ fontSize: 24, mb: 0.5 }} />
+          <Typography variant="h6" fontWeight="bold">{isEarTraining ? result.mistakes : result.accuracy.toFixed(0) + '%'}</Typography>
+          <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>{isEarTraining ? t.etMistakes : t.accuracy}</Typography>
         </Grid>
         <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
           <TimerIcon color="secondary" sx={{ fontSize: 24, mb: 0.5 }} />
-          <Typography variant="h6" fontWeight="bold">{result.avgTime.toFixed(1)}s</Typography>
-          <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>{t.avgSpeed}</Typography>
+          <Typography variant="h6" fontWeight="bold">{isEarTraining ? result.totalTime.toFixed(1) : result.avgTime.toFixed(1)}s</Typography>
+          <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>{isEarTraining ? t.etTime : t.avgSpeed}</Typography>
         </Grid>
       </Grid>
 

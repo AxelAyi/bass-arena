@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper, FormControlLabel, Switch, IconButton, keyframes, alpha, useTheme, Stack } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import * as ReactRouterDOM from 'react-router-dom';
@@ -9,11 +9,14 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import HistoryToggleOffIcon from '@mui/icons-material/HistoryToggleOff';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 
 import { PROGRAMS, DayTask } from '../data/program30days';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
 import SessionRunner from '../components/SessionRunner';
+import EarTrainingSessionRunner from '../components/EarTrainingSessionRunner';
 import MicPermissionDialog from '../components/MicPermissionDialog';
 import SRSExplainer from '../components/SRSExplainer';
 import SRSTimeline from '../components/SRSTimeline';
@@ -53,6 +56,8 @@ const Program: React.FC = () => {
   const [micDialogOpen, setMicDialogOpen] = useState(false);
   const [srsExplainerOpen, setSrsExplainerOpen] = useState(false);
   const [pendingTask, setPendingTask] = useState<DayTask | null>(null);
+  
+  const lastLaunchedRef = useRef<string | null>(null);
 
   const currentProgramId = useMemo(() => programId || 'fretboard', [programId]);
   const activeProgram = useMemo(() => PROGRAMS.find(p => p.id === currentProgramId) || PROGRAMS[0], [currentProgramId]);
@@ -61,7 +66,33 @@ const Program: React.FC = () => {
     return activeProgram.days.filter(d => settings.isFiveString || !d.isFiveStringOnly);
   }, [activeProgram.days, settings.isFiveString]);
 
-  // SRS Statistics
+  const sanitizeText = useCallback((task: DayTask, type: 'title' | 'description') => {
+    let clean = '';
+    if (settings.language === 'fr') clean = (type === 'title' ? task.title_fr : task.description_fr) || (type === 'title' ? task.title : task.description);
+    else if (settings.language === 'es') clean = (type === 'title' ? task.title_es : task.description_es) || (type === 'title' ? task.title : task.description);
+    else clean = (type === 'title' ? task.title : task.description);
+
+    if (!settings.isFiveString) {
+      clean = clean.replace(/\s*&\s*B/gi, '').replace(/\s*y\s*Si/gi, '').replace(/\s*&\s*Si/gi, '').replace(/\s*and\s*B/gi, '').replace(/B\s*&\s*/gi, '').replace(/Si\s*&\s*/gi, '').replace(/B\s*string/gi, 'lower strings').replace(/Corde\s*Si/gi, 'cordes graves').replace(/Cuerda\s*Si/gi, 'cuerdas graves').replace(/B:/gi, ':').replace(/Si:/gi, ':').replace(/\s+/g, ' ').trim();
+    }
+    return translateTextWithNotes(clean, settings.noteNaming);
+  }, [settings.isFiveString, settings.noteNaming, settings.language]);
+
+  const onNextAction = useMemo(() => {
+    if (!day) return undefined;
+    const currentDayNum = parseInt(day);
+    const currentIndex = filteredDays.findIndex(d => d.day === currentDayNum);
+    if (currentIndex === -1 || currentIndex >= filteredDays.length - 1) return undefined;
+    
+    const nextTask = filteredDays[currentIndex + 1];
+    return {
+      label: sanitizeText(nextTask, 'title'),
+      action: () => {
+        navigate(`/program/${currentProgramId}/day/${nextTask.day}`);
+      }
+    };
+  }, [day, filteredDays, currentProgramId, navigate, sanitizeText]);
+
   const srsStats = useMemo(() => {
     let dueCount = 0;
     let upNextCount = 0;
@@ -131,18 +162,6 @@ const Program: React.FC = () => {
     return !!(prevStats && prevStats.bestAcc >= settings.minUnlockAccuracy);
   }, [filteredDays, dailyStats, settings.minUnlockAccuracy, settings.unlockAllExercises]);
 
-  const sanitizeText = useCallback((task: DayTask, type: 'title' | 'description') => {
-    let clean = '';
-    if (settings.language === 'fr') clean = (type === 'title' ? task.title_fr : task.description_fr) || (type === 'title' ? task.title : task.description);
-    else if (settings.language === 'es') clean = (type === 'title' ? task.title_es : task.description_es) || (type === 'title' ? task.title : task.description);
-    else clean = (type === 'title' ? task.title : task.description);
-
-    if (!settings.isFiveString) {
-      clean = clean.replace(/\s*&\s*B/gi, '').replace(/\s*y\s*Si/gi, '').replace(/\s*&\s*Si/gi, '').replace(/\s*and\s*B/gi, '').replace(/B\s*&\s*/gi, '').replace(/Si\s*&\s*/gi, '').replace(/B\s*string/gi, 'lower strings').replace(/Corde\s*Si/gi, 'cordes graves').replace(/Cuerda\s*Si/gi, 'cuerdas graves').replace(/B:/gi, ':').replace(/Si:/gi, ':').replace(/\s+/g, ' ').trim();
-    }
-    return translateTextWithNotes(clean, settings.noteNaming);
-  }, [settings.isFiveString, settings.noteNaming, settings.language]);
-
   const launchTask = useCallback((task: DayTask) => {
     const stringIndices = settings.isFiveString ? task.strings : task.strings.filter(s => s !== 4);
     const pool = getAllPositionsInRanges(task.fretRange[1], stringIndices).filter(p => p.fret >= task.fretRange[0]);
@@ -161,13 +180,18 @@ const Program: React.FC = () => {
       }
     }
 
+    lastLaunchedRef.current = `${currentProgramId}-${task.day}`;
     setActiveTask({ task, questions: finalQuestions, title: sanitizeText(task, 'title') });
     setSessionKey(prev => prev + 1);
-  }, [settings.isFiveString, sanitizeText, t.noNotesError]);
+  }, [currentProgramId, settings.isFiveString, sanitizeText, t.noNotesError]);
 
   useEffect(() => {
     if (day) {
       const dayNum = parseInt(day);
+      const sessionSlug = `${currentProgramId}-${dayNum}`;
+      
+      if (lastLaunchedRef.current === sessionSlug) return;
+
       const task = filteredDays.find(d => d.day === dayNum);
       if (task) {
         const taskIdx = filteredDays.indexOf(task);
@@ -176,13 +200,31 @@ const Program: React.FC = () => {
           else { setPendingTask(task); setMicDialogOpen(true); }
         } else navigate(`/program/${currentProgramId}`);
       }
-    } else setActiveTask(null);
+    } else {
+      setActiveTask(null);
+      lastLaunchedRef.current = null;
+    }
   }, [day, filteredDays, currentProgramId, isTaskUnlocked, isMicEnabled, launchTask, navigate]);
 
   const handleStartTask = (task: DayTask) => navigate(`/program/${currentProgramId}/day/${task.day}`);
   const handleProgramTabChange = (_: any, val: string) => navigate(`/program/${val}`);
 
   if (activeTask) {
+    if (activeTask.task.isEarTraining) {
+      return (
+        <EarTrainingSessionRunner 
+          key={sessionKey}
+          day={activeTask.task.day}
+          title={activeTask.title}
+          description={sanitizeText(activeTask.task, 'description')}
+          sequence={activeTask.task.sequence || []}
+          onFinish={() => navigate(`/program/${currentProgramId}`)}
+          onReplay={() => setSessionKey(prev => prev + 1)}
+          onNext={onNextAction}
+          programId={currentProgramId}
+        />
+      );
+    }
     return (
       <SessionRunner 
         key={sessionKey}
@@ -193,6 +235,7 @@ const Program: React.FC = () => {
         programId={currentProgramId}
         onReplay={() => setSessionKey(prev => prev + 1)}
         sequence={activeTask.task.sequence}
+        onNext={onNextAction}
       />
     );
   }
@@ -320,6 +363,10 @@ const Program: React.FC = () => {
           const isSuccessful = stats.bestAcc >= settings.minUnlockAccuracy;
           const unlocked = isTaskUnlocked(index);
           const isDue = settings.srsEnabled && srs.nextReview && new Date(srs.nextReview) <= new Date();
+          
+          // Difficulty indicator for Ear Training
+          const sequenceLength = task.sequence?.length || 0;
+          const difficultyColor = sequenceLength < 4 ? 'success.main' : sequenceLength < 7 ? 'warning.main' : 'error.main';
 
           return (
             <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={task.day}>
@@ -355,6 +402,14 @@ const Program: React.FC = () => {
                             sx={{ fontWeight: 900, height: 22, fontSize: '0.65rem', borderRadius: 1.5, bgcolor: srsAmber, color: '#000' }} 
                           />
                         )}
+                        {task.isEarTraining && (
+                          <Chip 
+                            label={`${t.difficulty}: ${sequenceLength} ${t.notes}`} 
+                            size="small" 
+                            icon={<SignalCellularAltIcon sx={{ fontSize: '12px !important', color: difficultyColor }} />}
+                            sx={{ fontWeight: 900, height: 22, fontSize: '0.65rem', borderRadius: 1.5, bgcolor: alpha(theme.palette.text.primary, 0.05) }} 
+                          />
+                        )}
                       </Box>
                       {isSuccessful ? (
                         <CheckCircleIcon color="success" fontSize="small" />
@@ -369,7 +424,15 @@ const Program: React.FC = () => {
                       <Chip label={`${t.fret} ${task.fretRange[0]}-${task.fretRange[1]}`} size="small" variant="outlined" sx={{ borderRadius: 1, fontSize: '0.7rem', fontWeight: 700 }} />
                       
                       {settings.srsEnabled && srs.level > 0 && (
-                        <SRSTimeline level={srs.level} />
+                        <Box sx={{ mt: 1 }}>
+                          <SRSTimeline level={srs.level} />
+                          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+                            <CalendarMonthIcon sx={{ fontSize: 12, color: isDue ? srsAmber : 'text.secondary' }} />
+                            <Typography variant="caption" sx={{ color: isDue ? srsAmber : 'text.secondary', fontWeight: 800, fontSize: '0.65rem' }}>
+                              {srs.level === 5 ? t.srsMastered : (isDue ? t.srsToday : `${t.srsNext} ${new Date(srs.nextReview).toLocaleDateString()}`)}
+                            </Typography>
+                          </Stack>
+                        </Box>
                       )}
                     </Box>
                   </CardContent>

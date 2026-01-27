@@ -10,11 +10,13 @@ export interface DayTask {
   fretRange: [number, number];
   focusNotes?: string[];
   sequence?: number[]; 
+  durations?: number[]; // Rhythmic durations (1.0 = quarter note)
   isFiveStringOnly?: boolean;
   questionCount?: number; // Optional count of questions for this task
   isRhythm?: boolean;
   pattern?: number[];
   midiSequence?: number[];
+  isEarTraining?: boolean;
 }
 
 export interface TrainingProgram {
@@ -327,7 +329,7 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_fr: "Alignement Vertical",
     description_fr: "Trouver la même note sur différentes cordes.",
     title_es: "Alineación Vertical",
-    description_es: "Encontrar la misma nota en diferentes cuerdas.",
+    description_es: "Encontrar la misma note en diferentes cuerdas.",
     strings: [E, A, D, G], 
     fretRange: [0, 12], 
     questionCount: 15 
@@ -351,7 +353,7 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
     title_fr: "Zone Poussiéreuse : Au-delà de 12",
     description_fr: "Explorez les frettes entre 13 et 17.",
     title_es: "El Final Polvoriento: Más allá de 12",
-    description_es: "Explora los trastes entre 13 y 17.",
+    description_es: "Explora los trastes entre 13 et 17.",
     strings: [E, A, D, G], 
     fretRange: [13, 17] 
   },
@@ -432,12 +434,12 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
   // --- PHASE 8: ADVANCED DRILLS & SEQUENCES ---
   { 
     day: 35, 
-    title: "The Octave Jumper", 
-    description: "Identify notes and their octaves across the neck.", 
-    title_fr: "Le Sauteur d'Octave",
-    description_fr: "Identifiez les notes et leurs octaves sur tout le manche.",
-    title_es: "El Saltador de Octavas",
-    description_es: "Identifica notas y sus octavas en todo el mástil.",
+    title: "The Fifth Interval", 
+    description: "The most stable interval in bass playing. Root to Fifth.", 
+    title_fr: "L'Intervalle de Quinte",
+    description_fr: "L'intervalle le plus stable à la basse. Fondamentale à la Quinte.",
+    title_es: "El Intervalo de Quinta",
+    description_es: "El intervalo más estable en el bajo. Tónica a Quinta.",
     strings: [E, A, D, G], 
     fretRange: [0, 12], 
     questionCount: 15 
@@ -548,6 +550,474 @@ export const PENTATONIC_PROGRAM: DayTask[] = Array.from({ length: 40 }, (_, i) =
   };
 });
 
+const EAR_TRAINING_TASKS: DayTask[] = [
+  // --- BEGINNER: 2-3 NOTES ---
+  { 
+    day: 1, title: "Perfect Fourth", description: "The core interval of bass tuning.", 
+    title_fr: "Quarte Juste", description_fr: "L'intervalle de base de l'accordage de la basse.",
+    title_es: "Cuarta Justa", description_es: "El intervalo central de la afinación del bajo.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 33], durations: [1, 2], isEarTraining: true 
+  },
+  { 
+    day: 2, title: "Perfect Fifth", description: "The anchor of bass. Root to Fifth jump.", 
+    title_fr: "Quinte Juste", description_fr: "L'ancre de la basse. Saut de la tonique à la quinte.",
+    title_es: "Quinta Justa", description_es: "El ancla del bajo. Salto de tónica a quinta.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 35], durations: [1, 2], isEarTraining: true 
+  },
+  { 
+    day: 3, title: "Major Triad", description: "Bright and happy. Root, Major Third, Fifth.", 
+    title_fr: "Triade Majeure", description_fr: "Brillant et joyeux. Tonique, Tierce Majeure, Quinte.",
+    title_es: "Tríada Mayor", description_es: "Brillante y alegre. Tónica, Tercera Mayor, Quinta.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 32, 35], durations: [1, 1, 2], isEarTraining: true 
+  },
+  { 
+    day: 4, title: "Minor Triad", description: "Dark and moody. Root, Minor Third, Fifth.", 
+    title_fr: "Triade Mineure", description_fr: "Sombre et mélancolique. Tonique, Tierce Mineure, Quinte.",
+    title_es: "Tríada Menor", description_es: "Oscura y melancólica. Tónica, Tercera Menor, Quinta.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 31, 35], durations: [1, 1, 2], isEarTraining: true 
+  },
+  { 
+    day: 5, title: "Major Pentatonic Intro", description: "First 3 notes of the major pent.", 
+    title_fr: "Intro Pentatonique Majeure", description_fr: "Les 3 premières notes de la pentatonique majeure.",
+    title_es: "Intro Pentatónica Mayor", description_es: "Las primeras 3 notas de la pentatónica mayor.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 30, 32], durations: [1, 1, 2], isEarTraining: true 
+  },
+  
+  // --- INTERMEDIATE: 4-5 NOTES ---
+  { 
+    day: 6, title: "Simple Walk-up", description: "A classic walking bass fragment.", 
+    title_fr: "Ascension Simple", description_fr: "Un fragment classique de walking bass.",
+    title_es: "Ascenso Simple", description_es: "Un fragmento clásico de walking bass.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 30, 32, 33], durations: [1, 1, 1, 1], isEarTraining: true 
+  },
+  { 
+    day: 7, title: "Descending Scale", description: "Coming back home. 4 notes down.", 
+    title_fr: "Gamme Descendante", description_fr: "Retour à la maison. 4 notes vers le bas.",
+    title_es: "Escala Descendente", description_es: "Regresando a casa. 4 notas hacia abajo.",
+    strings: [E, A], fretRange: [0, 12], sequence: [35, 33, 32, 30], durations: [1, 1, 1, 1], isEarTraining: true 
+  },
+  { 
+    day: 8, title: "Root-Fifth-Fourth", description: "Common bass relationship.", 
+    title_fr: "Tonique-Quinte-Quarte", description_fr: "Relation commune à la basse.",
+    title_es: "Tónica-Quinta-Cuarta", description_es: "Relación común en el bajo.",
+    strings: [E, A, D], fretRange: [0, 12], sequence: [28, 35, 33, 28], durations: [1, 1, 1, 1], isEarTraining: true 
+  },
+  { 
+    day: 9, title: "The Blues Fragment", description: "Flat fifth tension.", 
+    title_fr: "Fragment Blues", description_fr: "Tension de la quinte diminuée (blue note).",
+    title_es: "Fragmento de Blues", description_es: "Tensión de la quinta disminuida.",
+    strings: [E, A], fretRange: [0, 12], sequence: [33, 36, 37, 38], durations: [0.5, 0.5, 0.5, 2], isEarTraining: true 
+  },
+  { 
+    day: 10, title: "Arpeggio Skip", description: "Skipping notes in the triad.", 
+    title_fr: "Saut d'Arpège", description_fr: "Sauter des notes dans la triade.",
+    title_es: "Salto de Arpegio", description_es: "Saltando notas en la tríada.",
+    strings: [E, A, D], fretRange: [0, 12], sequence: [28, 35, 32, 30], durations: [1, 1, 1, 1], isEarTraining: true 
+  },
+  { 
+    day: 11, title: "Chromatic Step-up", description: "Half-step movements.", 
+    title_fr: "Montée Chromatique", description_fr: "Mouvements par demi-tons.",
+    title_es: "Paso Cromático", description_es: "Movimientos por semitonos.",
+    strings: [E], fretRange: [0, 12], sequence: [28, 29, 30, 31, 33], durations: [0.5, 0.5, 0.5, 0.5, 1], isEarTraining: true 
+  },
+  { 
+    day: 12, title: "Syncopated Root", description: "Rhythmic challenge on one note.", 
+    title_fr: "Tonique Syncopée", description_fr: "Défi rythmique sur une seule note.",
+    title_es: "Tónica Sincopada", description_es: "Desafío rítmico en una sola nota.",
+    strings: [E], fretRange: [0, 12], sequence: [28, 28, 28, 28, 28], durations: [0.75, 0.25, 1, 0.5, 0.5], isEarTraining: true 
+  },
+  { 
+    day: 13, title: "Lydian Lift", description: "The sharp fourth jump.", 
+    title_fr: "Élévation Lydienne", description_fr: "Le saut de quarte augmentée.",
+    title_es: "Elevación Lidia", description_es: "El salto de cuarta aumentada.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 34, 35, 33, 28], durations: [1, 1, 1, 1, 1], isEarTraining: true 
+  },
+  { 
+    day: 14, title: "Minor Pentatonic Intro", description: "First 3 notes of the minor pent.", 
+    title_fr: "Intro Pentatonique Mineure", description_fr: "Les 3 premières notes de la pentatonique mineure.",
+    title_es: "Intro Pentatónica Menor", description_es: "Las primeras 3 notas de la pentatónica menor.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 31, 33, 35, 28], durations: [1, 1, 1, 1, 1], isEarTraining: true 
+  },
+  { 
+    day: 15, title: "The Box Pattern", description: "Geometric recognition.", 
+    title_fr: "Motif en Boîte", description_fr: "Reconnaissance géométrique.",
+    title_es: "Patrón de Caja", description_es: "Reconocimiento geométrico.",
+    strings: [A, D], fretRange: [2, 5], sequence: [33, 35, 38, 37, 33], durations: [0.5, 0.5, 0.5, 0.5, 1], isEarTraining: true 
+  },
+  
+  // --- ADVANCED SONG INSPIRED ---
+  { 
+    day: 16, 
+    title: "Inspired: Seven Nation", 
+    description: "Recognize the iconic riff structure (Minor 3rd and scale steps).", 
+    title_fr: "Inspiré par : Seven Nation",
+    description_fr: "Reconnaissez la structure du riff iconique (Tierce mineure et degrés de la gamme).",
+    title_es: "Inspirado en: Seven Nation",
+    description_es: "Reconoce la estructura del riff icónico (Tercera menor y pasos de escala).",
+    strings: [E, A], fretRange: [0, 12], 
+    sequence: [28, 28, 31, 28, 26, 24, 23], 
+    durations: [1.5, 0.5, 0.75, 0.25, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 17, 
+    title: "Inspired: Billie Jean", 
+    description: "The classic F# minor pentatonic groove intervals.", 
+    title_fr: "Inspiré par : Billie Jean",
+    description_fr: "Les intervalles classiques du groove en Fa# mineur pentatonique.",
+    title_es: "Inspirado en: Billie Jean",
+    description_es: "Los intervalos clásicos del groove de Fa# menor pentatónico.",
+    strings: [E, A, D], fretRange: [0, 12], 
+    sequence: [30, 27, 25, 27, 30, 27, 25, 27], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    isEarTraining: true 
+  },
+  { 
+    day: 18, 
+    title: "Inspired: Feel Good", 
+    description: "Focus on the minor third and the flat fifth tension.", 
+    title_fr: "Inspiré par : Feel Good",
+    description_fr: "Concentrez-vous sur la tierce mineure et la tension de la quinte diminuée.",
+    title_es: "Inspirado en: Feel Good",
+    description_es: "Céntrate en la tercera menor y la tensión de la quinta disminuida.",
+    strings: [E, A], fretRange: [0, 12], 
+    sequence: [28, 28, 31, 33, 34, 33, 31, 28], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    isEarTraining: true 
+  },
+  { 
+    day: 19, 
+    title: "Inspired: Sunshine Love", 
+    description: "Descending blues scale fragment.", 
+    title_fr: "Inspiré par : Sunshine Love",
+    description_fr: "Fragment de gamme blues descendante.",
+    title_es: "Inspirado en: Sunshine Love",
+    description_es: "Fragmento de escala de blues descendente.",
+    strings: [E, A, D], fretRange: [0, 12], 
+    sequence: [38, 38, 36, 38, 33, 32, 31, 28], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 20, 
+    title: "Inspired: Stand By Me", 
+    description: "The major root movement (1 - 6 - 4 - 5).", 
+    title_fr: "Inspiré par : Stand By Me",
+    description_fr: "Le mouvement de tonique majeur classique (1 - 6 - 4 - 5).",
+    title_es: "Inspirado en: Stand By Me",
+    description_es: "El movimiento de tónica mayor clásico (1 - 6 - 4 - 5).",
+    strings: [E, A], fretRange: [0, 12], 
+    sequence: [28, 28, 37, 37, 33, 33, 35, 35], 
+    durations: [1, 1, 1, 1, 1, 1, 1, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 21, 
+    title: "Inspired: Come As You Are", 
+    description: "Chromatic movement on the low string.", 
+    title_fr: "Inspiré par : Come As You Are",
+    description_fr: "Mouvement chromatique sur la corde grave.",
+    title_es: "Inspirado en: Come As You Are",
+    description_es: "Movimiento cromático en la cuerda grave.",
+    strings: [E], fretRange: [0, 5], 
+    sequence: [28, 28, 29, 30, 28, 30, 28, 30, 29, 28], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 22, 
+    title: "Inspired: Money", 
+    description: "Odd-time feel arpeggio (m3, 5, 1).", 
+    title_fr: "Inspiré par : Money",
+    description_fr: "Arpège au feeling asymétrique (m3, 5, 1).",
+    title_es: "Inspirado en: Money",
+    description_es: "Arpegio con aire de compás impar (m3, 5, 1).",
+    strings: [E, A, D], fretRange: [0, 12], 
+    sequence: [33, 37, 38, 33, 31, 28, 33, 31], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 23, 
+    title: "Inspired: Under Pressure", 
+    description: "Steady rhythm with a leap to the fourth.", 
+    title_fr: "Inspiré par : Under Pressure",
+    description_fr: "Rythme régulier avec un saut vers la quarte.",
+    title_es: "Inspirado en: Under Pressure",
+    description_es: "Ritmo constante con un salto a la cuarta.",
+    strings: [E, A], fretRange: [0, 12], 
+    sequence: [38, 38, 38, 38, 38, 38, 43, 38], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    isEarTraining: true 
+  },
+  { 
+    day: 24, 
+    title: "Inspired: Psycho Killer", 
+    description: "Simple root-octave alternative (using Fifth/Fourth to avoid octaves).", 
+    title_fr: "Inspiré par : Psycho Killer",
+    description_fr: "Alternative simple tonique-octave (utilisant quinte/quarte pour éviter les octaves).",
+    title_es: "Inspirado en: Psycho Killer",
+    description_es: "Alternativa simple tónica-octava (usando quinta/cuarta para evitar octavas).",
+    strings: [E, A], fretRange: [0, 12], 
+    sequence: [33, 33, 33, 33, 33, 35, 33, 33], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 25, 
+    title: "Inspired: Hysteria", 
+    description: "Fast scalar movement in minor.", 
+    title_fr: "Inspiré par : Hysteria",
+    description_fr: "Mouvement scalaire rapide en mineur.",
+    title_es: "Inspirado en: Hysteria",
+    description_es: "Movimiento de escala rápido en menor.",
+    strings: [E, A], fretRange: [0, 12], 
+    sequence: [28, 30, 31, 30, 28, 33, 31, 28], 
+    durations: [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.5],
+    isEarTraining: true 
+  },
+  { 
+    day: 26, title: "Phrygian Tension", description: "The dark flat second.", 
+    title_fr: "Tension Phrygienne", description_fr: "La seconde mineure sombre.",
+    title_es: "Tensión Frigia", description_es: "La segunda menor oscura.",
+    strings: [E], fretRange: [0, 12], sequence: [28, 29, 28, 29, 28, 29, 28, 29], durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], isEarTraining: true 
+  },
+  { 
+    day: 27, title: "Melodic Minor Scale", description: "Mixed flavor.", 
+    title_fr: "Gamme Mineure Mélodique", description_fr: "Saveur mélangée.",
+    title_es: "Escala Menor Melódica", description_es: "Sabor mezclado.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 31, 34, 36, 34, 31, 28, 28], durations: [1, 1, 1, 1, 1, 1, 1, 1], isEarTraining: true 
+  },
+  { 
+    day: 28, title: "Diminished Loop", description: "Tension and release.", 
+    title_fr: "Boucle Diminuée", description_fr: "Tension et résolution.",
+    title_es: "Bucle Disminuido", description_es: "Tensión y resolución.",
+    strings: [E, A, D], fretRange: [0, 12], sequence: [28, 31, 34, 37, 34, 31, 28, 28], durations: [1, 1, 1, 1, 1, 1, 1, 1], isEarTraining: true 
+  },
+  { 
+    day: 29, title: "Inspired: Roundabout", description: "Classic prog-rock scalar intro.", 
+    title_fr: "Inspiré par : Roundabout", description_fr: "Intro scalaire de rock progressif classique.",
+    title_es: "Inspirado en: Roundabout", description_es: "Intro de escala de rock progresivo clásico.",
+    strings: [E, A], fretRange: [0, 12], sequence: [28, 33, 35, 33, 31, 30, 28, 30], durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1], isEarTraining: true 
+  },
+  { 
+    day: 30, title: "Inspired: Longview", description: "Shuffle-feel minor third riffs.", 
+    title_fr: "Inspiré par : Longview", description_fr: "Riffs de tierce mineure au feeling shuffle.",
+    title_es: "Inspirado en: Longview", description_es: "Riffs de tercera menor con aire de shuffle.",
+    strings: [E, A, D], fretRange: [0, 12], sequence: [38, 41, 38, 36, 33, 36, 38, 41], durations: [0.66, 0.33, 0.66, 0.33, 0.66, 0.33, 0.66, 1], isEarTraining: true 
+  },
+
+  // --- ELITE: 9+ NOTES ---
+  { 
+    day: 31, 
+    title: "Inspired: Higher Ground", 
+    description: "Stevie Wonder style funk. Root-Octave-b7-5 sequence.", 
+    title_fr: "Inspiré par : Higher Ground",
+    description_fr: "Funk style Stevie Wonder. Séquence Tonique-Octave-b7-5.",
+    title_es: "Inspirado en: Higher Ground",
+    description_es: "Funk al estilo Stevie Wonder. Secuencia Tónica-Octava-b7-5.",
+    strings: [E, A], fretRange: [0, 12], 
+    sequence: [28, 40, 38, 35, 28, 40, 38, 35, 28], 
+    durations: [0.25, 0.5, 0.5, 0.25, 0.25, 0.5, 0.5, 0.25, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 32, 
+    title: "Inspired: Bridge Under", 
+    description: "Chordal arpeggio approach on bass.", 
+    title_fr: "Inspiré par : Bridge Under",
+    description_fr: "Approche d'arpège d'accord sur la basse.",
+    title_es: "Inspirado en: Bridge Under",
+    description_es: "Enfoque de arpegio de acorde en el bajo.",
+    strings: [E, A, D], fretRange: [0, 12], 
+    sequence: [36, 40, 38, 41, 40, 36, 40, 38, 41, 40], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 33, 
+    title: "Inspired: Message Bottle", 
+    description: "Wide Add9 arpeggio shapes.", 
+    title_fr: "Inspiré par : Message Bottle",
+    description_fr: "Formes d'arpèges Add9 très larges.",
+    title_es: "Inspirado en: Message Bottle",
+    description_es: "Formas de arpegio Add9 muy amplias.",
+    strings: [E, A, D], fretRange: [0, 12], 
+    sequence: [37, 44, 50, 33, 40, 46, 31, 38, 44], 
+    durations: [1, 1, 1, 1, 1, 1, 1, 1, 2],
+    isEarTraining: true 
+  },
+  { 
+    day: 34, 
+    title: "Inspired: Schism", 
+    description: "Tool style alternating intervals.", 
+    title_fr: "Inspiré par : Schism",
+    description_fr: "Intervalles alternés style Tool.",
+    title_es: "Inspirado en: Schism",
+    description_es: "Intervalos alternos al estilo Tool.",
+    strings: [D, G], fretRange: [0, 12], 
+    sequence: [38, 45, 43, 38, 45, 43, 35, 42, 40], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 35, 
+    title: "Inspired: Teen Town", 
+    description: "Jaco style chromatic movements and jumps.", 
+    title_fr: "Inspiré par : Teen Town",
+    description_fr: "Mouvements chromatiques et sauts style Jaco.",
+    title_es: "Inspirado en: Teen Town",
+    description_es: "Movimientos cromáticos y saltos al estilo Jaco.",
+    strings: [A, D, G], fretRange: [0, 12], 
+    sequence: [33, 34, 35, 40, 39, 38, 43, 42, 41], 
+    durations: [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 36, 
+    title: "Inspired: Sir Duke", 
+    description: "The legendary chromatic unison run.", 
+    title_fr: "Inspiré par : Sir Duke",
+    description_fr: "La légendaire descente chromatique à l'unisson.",
+    title_es: "Inspirado en: Sir Duke",
+    description_es: "La legendaria bajada cromática al unísono.",
+    strings: [A, D, G], fretRange: [0, 12], 
+    sequence: [33, 35, 36, 37, 40, 38, 33, 31, 28, 31], 
+    durations: [0.25, 0.25, 0.25, 0.25, 0.5, 0.5, 0.25, 0.25, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 37, 
+    title: "Inspired: YYZ", 
+    description: "The tritone-heavy technical riff.", 
+    title_fr: "Inspiré par : YYZ",
+    description_fr: "Le riff technique chargé en tritons.",
+    title_es: "Inspirado en: YYZ",
+    description_es: "El riff técnico cargado de tritonos.",
+    strings: [A, D], fretRange: [0, 12], 
+    sequence: [35, 35, 41, 40, 39, 38, 35, 41, 40, 39, 38], 
+    durations: [0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.5, 0.25, 0.25, 0.25, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 38, 
+    title: "Inspired: The Chicken", 
+    description: "Standard jazz-funk scalar theme.", 
+    title_fr: "Inspiré par : The Chicken",
+    description_fr: "Thème scalaire jazz-funk standard.",
+    title_es: "Inspirado en: The Chicken",
+    description_es: "Tema de escala jazz-funk estándar.",
+    strings: [A, D, G], fretRange: [0, 12], 
+    sequence: [33, 38, 40, 41, 42, 43, 38, 33, 31, 33], 
+    durations: [1, 0.5, 0.25, 0.25, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 39, 
+    title: "Inspired: Master Puppets", 
+    description: "Tight chromatic descents.", 
+    title_fr: "Inspiré par : Master Puppets",
+    description_fr: "Descentes chromatiques serrées.",
+    title_es: "Inspirado en: Master Puppets",
+    description_es: "Descensos cromáticos ajustados.",
+    strings: [E], fretRange: [0, 12], 
+    sequence: [40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 28], 
+    durations: [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 40, 
+    title: "Inspired: Dark Necessity", 
+    description: "Modern slap-style melodic sequence.", 
+    title_fr: "Inspiré par : Dark Necessity",
+    description_fr: "Séquence mélodique moderne style slap.",
+    title_es: "Inspirado en: Dark Necessity",
+    description_es: "Secuencia melódica moderna al estilo slap.",
+    strings: [E, A, D, G], fretRange: [0, 12], 
+    sequence: [28, 40, 38, 36, 35, 40, 38, 36, 35, 31, 28], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 41, 
+    title: "Inspired: Tracy Portrait", 
+    description: "Spaced melodic intervals.", 
+    title_fr: "Inspiré par : Tracy Portrait",
+    description_fr: "Intervalles mélodiques espacés.",
+    title_es: "Inspirado en: Tracy Portrait",
+    description_es: "Intervalos melódicos espaciados.",
+    strings: [E, A, D, G], fretRange: [0, 12], 
+    sequence: [43, 38, 33, 28, 43, 38, 33, 28, 43, 38, 33, 28], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 42, 
+    title: "Elite Pentatonic Run", 
+    description: "Rapid minor pentatonic descent.", 
+    title_fr: "Elite : Course Pentatonique",
+    description_fr: "Descente rapide en mineur pentatonique.",
+    title_es: "Elite: Carrera Pentatónica",
+    description_es: "Descenso rápido en menor pentatónico.",
+    strings: [E, A, D, G], fretRange: [0, 12], 
+    sequence: [40, 38, 35, 33, 31, 28, 31, 33, 35, 38, 40, 43], 
+    durations: [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 43, 
+    title: "Lydian Elite Theme", 
+    description: "Extended sharp-fourth melodic line.", 
+    title_fr: "Thème Elite Lydien",
+    description_fr: "Ligne mélodique étendue avec quarte augmentée.",
+    title_es: "Tema Elite Lidio",
+    description_es: "Línea melódica extendida con cuarta aumentada.",
+    strings: [E, A, D, G], fretRange: [0, 12], 
+    sequence: [28, 30, 32, 34, 35, 37, 39, 40, 42, 44, 46, 47, 48], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 44, 
+    title: "The Octave Ghost", 
+    description: "Fast octave alternations with scale steps.", 
+    title_fr: "L'Octave Fantôme",
+    description_fr: "Alternances rapides d'octaves avec degrés de la gamme.",
+    title_es: "La Octava Fantasma",
+    description_es: "Alternancias rápidas de octavas con pasos de escala.",
+    strings: [E, A, D, G], fretRange: [0, 12], 
+    sequence: [28, 40, 30, 42, 32, 44, 33, 45, 35, 47, 37, 49, 38, 50], 
+    durations: [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 1],
+    isEarTraining: true 
+  },
+  { 
+    day: 45, 
+    title: "Ultra Marathon Boss", 
+    description: "The ultimate relative pitch and memory test.", 
+    title_fr: "Ultra Marathon Boss",
+    description_fr: "L'ultime test de l'oreille relative et de la mémoire.",
+    title_es: "Ultra Maratón Boss",
+    description_es: "La prueba definitiva de oído relativo y memoria.",
+    strings: [E, A, D, G], fretRange: [0, 12], 
+    sequence: [28, 31, 33, 34, 35, 38, 40, 43, 40, 38, 35, 34, 33, 31, 28, 23, 28, 33, 35], 
+    durations: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1, 0.5, 0.5, 0.5, 2],
+    isEarTraining: true 
+  },
+  { 
+    day: 46, 
+    title: "Inspired: Plumbing Hero", 
+    description: "The legendary platformer theme. A masterclass in rhythmic jumps and catchy intervals.", 
+    title_fr: "Inspiré par : Le Héros Plombier",
+    description_fr: "Le thème légendaire de plateforme. Une masterclass de sauts rythmiques et d'intervalles mémorisables.",
+    title_es: "Inspirado en: El Héroe Fontanero",
+    description_es: "El legendario tema de plataformas. Una clase magistral de saltos rítmicos e intervalos pegadizos.",
+    strings: [E, A, D, G], fretRange: [0, 12], 
+    sequence: [40, 40, 40, 36, 40, 43, 31, 36, 31, 28, 33, 35, 34, 33, 31, 40, 43, 45, 41, 43, 40, 36, 38, 35], 
+    durations: [0.25, 0.5, 0.5, 0.25, 0.5, 1, 1, 0.75, 0.25, 0.5, 0.5, 0.5, 0.5, 0.5, 0.33, 0.33, 0.33, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+    isEarTraining: true 
+  }
+];
+
 export const PROGRAMS: TrainingProgram[] = [
   { 
     id: 'fretboard', 
@@ -566,7 +1036,17 @@ export const PROGRAMS: TrainingProgram[] = [
     name_fr: 'Puissance Pentatonique',
     description_fr: 'Maîtrisez les formes essentielles sur tout le manche.',
     name_es: 'Poder Pentatónico',
-    description_es: 'Domina las formas esenciales en todo el mástil.',
+    description_es: 'Domina las formas essentielles en todo el mástil.',
     days: PENTATONIC_PROGRAM 
+  },
+  {
+    id: 'eartraining',
+    name: 'Ear Training',
+    description: 'Train your ear to recognize intervals and melodies without visual aid.',
+    name_fr: 'L\'Oreille',
+    description_fr: 'Entraînez votre oreille à reconnaître les intervalles et mélodies sans aide visuelle.',
+    name_es: 'El Oído',
+    description_es: 'Entrena tu oído para reconocer intervalos y melodías sin ayuda visual.',
+    days: EAR_TRAINING_TASKS
   }
 ];
