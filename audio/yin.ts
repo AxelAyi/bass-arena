@@ -1,7 +1,7 @@
 export function detectPitchYIN(
   buffer: Float32Array,
   sampleRate: number,
-  threshold: number = 0.15 
+  threshold: number = 0.18 
 ): number | null {
   const bufferSize = buffer.length;
   const halfBufferSize = Math.floor(bufferSize / 2);
@@ -43,9 +43,9 @@ export function detectPitchYIN(
         tau = t;
       }
     }
-    // Permissive noise floor for bass: 0.7 allows for slightly more "noisy" autocorrelation 
-    // which is common when plucking low strings.
-    if (minVal > 0.7) return null;
+    // For bass, we allow a high aperiodicity floor (0.8) because low strings 
+    // often have significant noise components.
+    if (minVal > 0.8) return null;
   }
 
   // Step 4: Parabolic interpolation
