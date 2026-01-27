@@ -6,9 +6,10 @@ import MicIcon from '@mui/icons-material/Mic';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SchoolIcon from '@mui/icons-material/School';
 import PlayCircleFilledIcon from '@mui/icons-material/PlayCircleFilled';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import KeyboardDoubleArrowDownIcon from '@mui/icons-material/KeyboardDoubleArrowDown';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
@@ -79,7 +80,7 @@ const Landing: React.FC = () => {
               animation: `${float} 3s ease-in-out infinite`
             }}
           >
-            30-Day Fretboard Mastery
+            Science-Backed Fretboard Mastery
           </Box>
           <Typography 
             variant="h1" 
@@ -151,11 +152,11 @@ const Landing: React.FC = () => {
       {/* Feature Grid */}
       <Container maxWidth="lg" id="features" sx={{ py: 10 }}>
         <Grid container spacing={4}>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Paper 
               elevation={0} 
               sx={{ 
-                p: 4, 
+                p: 3, 
                 height: '100%', 
                 borderRadius: 4, 
                 bgcolor: alpha(theme.palette.primary.main, 0.03),
@@ -170,11 +171,11 @@ const Landing: React.FC = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Paper 
               elevation={0} 
               sx={{ 
-                p: 4, 
+                p: 3, 
                 height: '100%', 
                 borderRadius: 4, 
                 bgcolor: alpha(theme.palette.primary.main, 0.03),
@@ -189,11 +190,11 @@ const Landing: React.FC = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Paper 
               elevation={0} 
               sx={{ 
-                p: 4, 
+                p: 3, 
                 height: '100%', 
                 borderRadius: 4, 
                 bgcolor: alpha(theme.palette.primary.main, 0.03),
@@ -208,8 +209,97 @@ const Landing: React.FC = () => {
               </Typography>
             </Paper>
           </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 3, 
+                height: '100%', 
+                borderRadius: 4, 
+                bgcolor: alpha(theme.palette.primary.main, 0.03),
+                border: '1px solid',
+                borderColor: theme.palette.primary.main,
+                boxShadow: `0 0 15px ${alpha(theme.palette.primary.main, 0.1)}`
+              }}
+            >
+              <AutoAwesomeIcon color="primary" sx={{ fontSize: 40, mb: 2 }} />
+              <Typography variant="h6" fontWeight="900" gutterBottom>{t.feature4Title}</Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.6 }}>
+                {t.feature4Desc}
+              </Typography>
+            </Paper>
+          </Grid>
         </Grid>
       </Container>
+
+      {/* SRS Science Section */}
+      <Box sx={{ py: 12, position: 'relative', overflow: 'hidden' }}>
+        <Container maxWidth="md">
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: { xs: 4, md: 8 }, 
+              borderRadius: 6, 
+              border: '1px solid', 
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+              position: 'relative'
+            }}
+          >
+            <Box 
+              sx={{ 
+                position: 'absolute', 
+                top: -20, 
+                right: 40, 
+                px: 2, 
+                py: 1, 
+                bgcolor: 'primary.main', 
+                color: 'primary.contrastText', 
+                borderRadius: 2,
+                fontWeight: 900,
+                fontSize: '0.75rem',
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                boxShadow: theme.shadows[4]
+              }}
+            >
+              Methodology
+            </Box>
+            
+            <Stack spacing={4} alignItems="center" textAlign="center">
+              <TrendingUpIcon color="primary" sx={{ fontSize: 48 }} />
+              <Box>
+                <Typography variant="h4" fontWeight="900" gutterBottom sx={{ letterSpacing: -1 }}>
+                  {t.srsSectionTitle}
+                </Typography>
+                <Typography variant="subtitle1" color="primary" fontWeight="800" sx={{ mb: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                  {t.srsSectionSubtitle}
+                </Typography>
+                <Typography variant="body1" color="textSecondary" sx={{ lineHeight: 1.8, fontSize: '1.1rem' }}>
+                  {t.srsSectionDesc}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ width: '100%', pt: 4 }}>
+                 <Grid container spacing={2} justifyContent="center" alignItems="flex-end" sx={{ height: 100 }}>
+                    {[30, 50, 70, 90, 100].map((h, i) => (
+                      <Grid key={i} size={{ xs: 2 }}>
+                        <Box sx={{ 
+                          height: `${h}%`, 
+                          bgcolor: alpha(theme.palette.primary.main, (i + 1) * 0.2), 
+                          borderRadius: '4px 4px 0 0' 
+                        }} />
+                      </Grid>
+                    ))}
+                 </Grid>
+                 <Typography variant="caption" color="textSecondary" sx={{ mt: 2, display: 'block', fontWeight: 700 }}>
+                   The Forgetting Curve vs. Spaced Repetition Intervals
+                 </Typography>
+              </Box>
+            </Stack>
+          </Paper>
+        </Container>
+      </Box>
 
       {/* How it works */}
       <Box sx={{ bgcolor: isDarkMode ? alpha('#fff', 0.02) : alpha('#000', 0.02), py: 12 }}>
