@@ -28,16 +28,35 @@ export const getAppTheme = (mode: 'light' | 'dark', primaryColor: string) => cre
     ...Array(20).fill('none'),
   ] as any,
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"DM Sans", "Helvetica", "Arial", sans-serif',
+    h1: {
+      fontFamily: '"Plus Jakarta Sans", "DM Sans", sans-serif',
+      fontWeight: 800,
+      letterSpacing: '-0.03em',
+    },
+    h2: {
+      fontFamily: '"Plus Jakarta Sans", "DM Sans", sans-serif',
+      fontWeight: 800,
+      letterSpacing: '-0.025em',
+    },
+    h3: {
+      fontFamily: '"Plus Jakarta Sans", "DM Sans", sans-serif',
+      fontWeight: 800,
+      letterSpacing: '-0.02em',
+    },
     h4: {
+      fontFamily: '"Plus Jakarta Sans", "DM Sans", sans-serif',
       fontWeight: 800,
       letterSpacing: '-0.02em',
     },
     h5: {
+      fontFamily: '"Plus Jakarta Sans", "DM Sans", sans-serif',
       fontWeight: 700,
+      letterSpacing: '-0.015em',
     },
     h6: {
-      fontWeight: 600,
+      fontFamily: '"Plus Jakarta Sans", "DM Sans", sans-serif',
+      fontWeight: 700,
     },
   },
   components: {

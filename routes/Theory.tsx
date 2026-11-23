@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { 
   Box, Typography, Paper, Divider, List, ListItem, ListItemText, 
-  ListItemButton, useTheme, useMediaQuery, Chip,
+  ListItemButton, useTheme, useMediaQuery, Chip, Button, alpha,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   FormControl, InputLabel, Select, MenuItem, Stack
 } from '@mui/material';
@@ -18,9 +18,11 @@ import ExploreIcon from '@mui/icons-material/Explore';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import TuneIcon from '@mui/icons-material/Tune';
+import PlayCircleFilledIcon from '@mui/icons-material/PlayCircleFilled';
 import { useStore } from '../state/store';
 import { translateTextWithNotes, translateNoteName, NOTE_NAMES_ENGLISH } from '../audio/noteUtils';
 import { translations } from '../localization/translations';
+import { MODE_DEFINITIONS, MODE_ORDER, ModeId } from '../data/modesProgram';
 import SheetMusic from '../components/SheetMusic';
 
 const { useParams, useNavigate } = ReactRouterDOM as any;
@@ -34,7 +36,7 @@ const Theory: React.FC = () => {
   const t = translations[settings.language].theory;
   
   const [explorerRoot, setExplorerRoot] = useState('C');
-  const [explorerType, setExplorerType] = useState<'major' | 'minor'>('major');
+  const [explorerType, setExplorerType] = useState<'major' | 'minor' | ModeId>('major');
 
   const translate = useMemo(() => (text: string) => {
     return translateTextWithNotes(text, settings.noteNaming);
@@ -66,6 +68,7 @@ const Theory: React.FC = () => {
     { id: 'geometry', label: t.navGeometry, icon: <NavigationIcon fontSize="small" /> },
     { id: 'construction', label: t.navConstruction, icon: <ConstructionIcon fontSize="small" /> },
     { id: 'pentatonic', label: t.navPentatonic, icon: <AutoAwesomeIcon fontSize="small" /> },
+    { id: 'modes', label: t.navModes, icon: <AutoAwesomeIcon fontSize="small" /> },
     { id: 'library', label: t.navLibrary, icon: <MenuBookIcon fontSize="small" /> },
     { id: 'memorizing', label: t.navMemorizing, icon: <PsychologyIcon fontSize="small" /> },
     { id: 'explorer', label: t.scaleExplorer, icon: <ExploreIcon fontSize="small" /> },
@@ -75,10 +78,14 @@ const Theory: React.FC = () => {
     const rootIndex = NOTE_NAMES_ENGLISH.indexOf(explorerRoot);
     let startMidi = rootIndex + 24; 
     if (startMidi < 28) startMidi += 12;
-    const majorIntervals = [0, 2, 4, 7, 9, 12];
-    const minorIntervals = [0, 3, 5, 7, 10, 12];
-    const intervals = explorerType === 'major' ? majorIntervals : minorIntervals;
-    return intervals.map(v => startMidi + v);
+    if (explorerType === 'major') {
+      return [0, 2, 4, 7, 9, 12].map(v => startMidi + v);
+    }
+    if (explorerType === 'minor') {
+      return [0, 3, 5, 7, 10, 12].map(v => startMidi + v);
+    }
+    const modeDef = MODE_DEFINITIONS[explorerType];
+    return [...modeDef.intervals, 12].map(v => startMidi + v);
   }, [explorerRoot, explorerType]);
 
   const getPentatonicNotes = (root: string, type: 'major' | 'minor') => {
@@ -187,7 +194,7 @@ const Theory: React.FC = () => {
                 <Typography variant="body2" paragraph color="textSecondary">{t.readingDesc}</Typography>
                 <Box>
                   <Typography variant="subtitle2" fontWeight="800" gutterBottom>{t.exCMajor}</Typography>
-                  <SheetMusic midiNotes={[28, 30, 32, 33, 35, 37, 39, 40]} currentIndex={-1} isFiveString={settings.isFiveString} />
+                  <SheetMusic midiNotes={[28, 30, 32, 33, 35, 37, 39, 40]} currentIndex={-1} isFiveString={settings.isFiveString} preferNoOpenStrings={false} />
                 </Box>
               </Paper>
             </section>
@@ -253,6 +260,103 @@ const Theory: React.FC = () => {
                   <Typography variant="body2">{t.guessingMajor}</Typography>
                   <Typography variant="body2">{t.guessingMinor}</Typography>
                 </Box>
+              </Paper>
+            </section>
+
+            <section id="modes">
+              <Paper sx={{ p: 3, borderRadius: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+                  <Typography variant="h6" color="primary" fontWeight="800">{t.modesTitle}</Typography>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<PlayCircleFilledIcon />}
+                    onClick={() => navigate('/program/modes')}
+                    sx={{ fontWeight: 800, borderRadius: 2 }}
+                  >
+                    {t.modesCta}
+                  </Button>
+                </Box>
+                <Typography variant="body2" paragraph color="textSecondary" sx={{ lineHeight: 1.65 }}>
+                  {translate(t.modesDesc)}
+                </Typography>
+
+                <Box
+                  sx={{
+                    p: 2.5,
+                    mb: 3,
+                    borderRadius: 2,
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    borderLeft: '4px solid',
+                    borderColor: 'primary.main',
+                  }}
+                >
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <LightbulbIcon color="primary" fontSize="small" />
+                    <Typography variant="subtitle2" color="primary" fontWeight="900">
+                      {t.modesBeginnerBoxTitle}
+                    </Typography>
+                  </Stack>
+                  <Stack spacing={1}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                      {translate(t.modesBeginnerStep1)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                      {translate(t.modesBeginnerStep2)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                      {translate(t.modesBeginnerStep3)}
+                    </Typography>
+                  </Stack>
+                </Box>
+
+                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: 'background.default' }}>
+                        <TableCell sx={{ fontWeight: 800, fontSize: '0.72rem' }}>{t.modesColMode}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, fontSize: '0.72rem' }}>{t.modesColChord}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, fontSize: '0.72rem' }}>{t.modesColColor}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, fontSize: '0.72rem' }}>{t.modesColCompare}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, fontSize: '0.72rem' }}>{t.modesColVibe}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {MODE_ORDER.map((id) => {
+                        const m = MODE_DEFINITIONS[id];
+                        const name = settings.language === 'fr' ? m.name_fr : settings.language === 'es' ? m.name_es : m.name;
+                        const vibe = settings.language === 'fr' ? m.vibe_fr : settings.language === 'es' ? m.vibe_es : m.vibe;
+                        const compare = settings.language === 'fr' ? m.comparedToBasic_fr : settings.language === 'es' ? m.comparedToBasic_es : m.comparedToBasic;
+                        return (
+                          <TableRow key={id} hover>
+                            <TableCell sx={{ fontWeight: 900, color: 'primary.main', whiteSpace: 'nowrap' }}>
+                              {m.modeNumber}. {name}{' '}
+                              <Typography component="span" variant="caption" color="text.secondary" fontWeight={700}>
+                                ({translateNoteName(m.cMajorParentNote, settings.noteNaming)})
+                              </Typography>
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 800, fontSize: '0.78rem', whiteSpace: 'nowrap' }}>{m.chordSymbol}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={`★ ${m.colorDegree}`}
+                                size="small"
+                                sx={{
+                                  fontWeight: 900,
+                                  fontSize: '0.7rem',
+                                  height: 22,
+                                  bgcolor: alpha('#ffb300', 0.18),
+                                  color: theme.palette.mode === 'dark' ? '#ffb300' : '#b26a00',
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ fontSize: '0.75rem' }}>{translate(compare)}</TableCell>
+                            <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{vibe}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               </Paper>
             </section>
 
@@ -331,9 +435,18 @@ const Theory: React.FC = () => {
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth size="small">
                       <InputLabel>{t.scaleType}</InputLabel>
-                      <Select value={explorerType} label={t.scaleType} onChange={(e) => setExplorerType(e.target.value as 'major' | 'minor')} sx={{ fontWeight: 700 }}>
+                      <Select value={explorerType} label={t.scaleType} onChange={(e) => setExplorerType(e.target.value as 'major' | 'minor' | ModeId)} sx={{ fontWeight: 700 }}>
                         <MenuItem value="major">{t.majorPent}</MenuItem>
                         <MenuItem value="minor">{t.minorPent}</MenuItem>
+                        {MODE_ORDER.map((modeId) => {
+                          const m = MODE_DEFINITIONS[modeId];
+                          const label = settings.language === 'fr' ? m.name_fr : settings.language === 'es' ? m.name_es : m.name;
+                          return (
+                            <MenuItem key={modeId} value={modeId}>
+                              {label} ({m.chordSymbol} • ★ {m.colorDegree})
+                            </MenuItem>
+                          );
+                        })}
                       </Select>
                     </FormControl>
                   </Grid>

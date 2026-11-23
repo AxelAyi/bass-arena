@@ -10,23 +10,106 @@ export interface NoteInfo {
   displayName?: string;
 }
 
+const ENGLISH_TO_LATIN_BASE: Record<string, string> = {
+  C: 'Do',
+  D: 'Re',
+  E: 'Mi',
+  F: 'Fa',
+  G: 'Sol',
+  A: 'La',
+  B: 'Si',
+};
+
+const MUSICAL_FOLLOW_WORDS =
+  /^\s+(?:major|minor|natural|pentatonic|ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian|string|strings|note|notes|root|chord|scale|key|box|flat|sharp|octave|majeur|majeure|mineur|mineure|naturel|naturelle|pentatonique|ionien|dorien|phrygien|lydien|mixolydien|éolien|locrien|corde|cordes|tonique|gamme|accord|bémol|dièse|mayor|menor|pentatónica|jónico|dórico|frigio|lidio|mixolidio|eólico|locrio|cuerda|cuerdas|tónica|escala|acorde|bemol|sostenido)(?![\p{L}\p{M}])/iu;
+
+const ENGLISH_NOTE_TOKEN_REGEX =
+  /(?<![\p{L}\p{M}])([A-G])([#b♯♭])?(maj7#11|maj9|maj7|maj|min7|min|m7\(b9\)|m7\(b6\)|m7b5|m7b9|m7|dim7|dim|aug|sus2|sus4|sus|add9|13|11|9|7|[0-8])?(?![\p{L}\p{M}\d])/gu;
+
 export function translateNoteName(englishName: string, naming: 'english' | 'latin'): string {
   if (naming === 'english') return englishName;
   const idx = NOTE_NAMES_ENGLISH.indexOf(englishName);
-  if (idx === -1) return englishName;
-  return NOTE_NAMES_LATIN[idx];
+  if (idx !== -1) return NOTE_NAMES_LATIN[idx];
+  const match = /^([A-G])([#b♯♭]?)$/.exec(englishName);
+  if (!match) return englishName;
+  return `${ENGLISH_TO_LATIN_BASE[match[1]]}${match[2]}`;
 }
 
 export function translateTextWithNotes(text: string, naming: 'english' | 'latin'): string {
-  if (naming === 'english') return text;
-  let result = text;
-  const sortedNotes = [...NOTE_NAMES_ENGLISH].sort((a, b) => b.length - a.length);
-  for (const engNote of sortedNotes) {
-    const latinNote = translateNoteName(engNote, 'latin');
-    const regex = new RegExp(`\\b${engNote.replace('#', '\\#')}\\b`, 'g');
-    result = result.replace(regex, latinNote);
-  }
-  return result;
+  if (naming === 'english' || !text) return text;
+
+  const trimmed = text.trim();
+
+  return text.replace(
+    ENGLISH_NOTE_TOKEN_REGEX,
+    (
+      match: string,
+      letter: string,
+      accidental: string = '',
+      suffix: string = '',
+      offset: number,
+      fullText: string
+    ) => {
+      const latinBase = ENGLISH_TO_LATIN_BASE[letter];
+      if (!latinBase) return match;
+
+      const before = fullText.slice(0, offset);
+      const after = fullText.slice(offset + match.length);
+
+      // Explicit accidental (F#, Bb), chord symbol (Cmaj7, Dm7, G7), or octave note (A1, E2)
+      if (accidental || suffix) {
+        return `${latinBase}${accidental}${suffix}`;
+      }
+
+      // Never replace single letters that are part of contractions/elisions (C'est, D'une, D'abord, l'...)
+      if (/^['’][\p{L}\p{M}]/u.test(after) || /[\p{L}\p{M}]['’]$/u.test(before)) {
+        return match;
+      }
+
+      // Never replace "B" inside "R&B"
+      if (letter === 'B' && /(?:^|[^\p{L}\p{M}])R\s*&\s*$/u.test(before)) {
+        return match;
+      }
+
+      // Never replace a person's middle/last initial (e.g., "Axel A.")
+      if (/^\./.test(after) && /\p{Lu}\p{Ll}+\s+$/u.test(before)) {
+        return match;
+      }
+
+      const isSentenceStart = /(?:^|[.!?¡¿:"«»“”]\s*)$/.test(before);
+
+      // Extra context guard for "A" (English article / Spanish preposition)
+      if (letter === 'A') {
+        const isStandalone = trimmed === 'A';
+        const followedByMusicalWord = MUSICAL_FOLLOW_WORDS.test(after);
+        const insideParens = /\(\s*$/.test(before) && /^\s*\)/.test(after);
+        const hasMusicalSeparator =
+          /[,&/\-–—→]\s*$/.test(before) || /^\s*[,)&/\]\-–—→★:(]/.test(after);
+        const midSentencePreposition =
+          !isSentenceStart &&
+          /\b(?:on|in|to|from|of|the|get|for|than|below|above|around|with|or|and|hit|play|touch|sur|en|de|du|vers|par|que|le|la|el|y|o|sobre|hasta|desde|con)\s+$/i.test(
+            before
+          );
+
+        if (
+          !isStandalone &&
+          !followedByMusicalWord &&
+          !insideParens &&
+          !hasMusicalSeparator &&
+          !midSentencePreposition
+        ) {
+          return match;
+        }
+      }
+
+      // Extra guard for Spanish conjunction "E" before words starting with i/hi (e.g., "E improvisa...")
+      if (letter === 'E' && isSentenceStart && /^\s+h?[ií]\p{L}/iu.test(after)) {
+        return match;
+      }
+
+      return latinBase;
+    }
+  );
 }
 
 export function frequencyToNote(freq: number): NoteInfo {
@@ -38,20 +121,155 @@ export function frequencyToNote(freq: number): NoteInfo {
   return { frequency: freq, midi: roundedMidi, noteName, octave, cents };
 }
 
-function getBassFretForMidi(midi: number, isFiveString: boolean): { string: number, fret: number } {
+export interface BassTabPosition {
+  string: number; // 1-indexed for MusicXML (1 = G, 2 = D, 3 = A, 4 = E, 5 = B)
+  stringIndex: number; // 0-indexed matching BASS_STRINGS (0 = G, 1 = D, 2 = A, 3 = E, 4 = B)
+  fret: number;
+}
+
+function getBassFretForMidi(
+  midi: number,
+  isFiveString: boolean,
+  preferNoOpenStrings: boolean = false
+): BassTabPosition {
   const tunings = isFiveString ? [43, 38, 33, 28, 23] : [43, 38, 33, 28];
+  if (preferNoOpenStrings) {
+    for (let i = 0; i < tunings.length; i++) {
+      const fret = midi - tunings[i];
+      if (fret >= 1 && fret <= 20) {
+        return { string: i + 1, stringIndex: i, fret };
+      }
+    }
+  }
   for (let i = 0; i < tunings.length; i++) {
     const fret = midi - tunings[i];
     if (fret >= 0 && fret <= 22) {
-      return { string: i + 1, fret };
+      return { string: i + 1, stringIndex: i, fret };
     }
   }
-  return { string: tunings.length, fret: Math.max(0, midi - tunings[tunings.length - 1]) };
+  return {
+    string: tunings.length,
+    stringIndex: tunings.length - 1,
+    fret: Math.max(0, midi - tunings[tunings.length - 1]),
+  };
+}
+
+/**
+ * Computes comfortable, compact bass TAB positions for a sequence of MIDI notes.
+ * When preferNoOpenStrings is true, selects a cohesive closed-position fret box
+ * and avoids open strings (fret 0) unless a pitch cannot be fretted anywhere else.
+ */
+export function getBassPositionsForSequence(
+  midiNotes: number[],
+  isFiveString: boolean = false,
+  preferNoOpenStrings: boolean = true
+): BassTabPosition[] {
+  if (midiNotes.length === 0) return [];
+  if (!preferNoOpenStrings) {
+    return midiNotes.map((m) => getBassFretForMidi(m, isFiveString, false));
+  }
+
+  const tunings = isFiveString ? [43, 38, 33, 28, 23] : [43, 38, 33, 28];
+  const candidatesPerNote: BassTabPosition[][] = midiNotes.map((midi) => {
+    const cands: BassTabPosition[] = [];
+    for (let i = 0; i < tunings.length; i++) {
+      const fret = midi - tunings[i];
+      if (fret >= 0 && fret <= 20) {
+        cands.push({ string: i + 1, stringIndex: i, fret });
+      }
+    }
+    if (cands.length === 0) {
+      cands.push(getBassFretForMidi(midi, isFiveString, true));
+    }
+    return cands;
+  });
+
+  let bestTotalCost = Infinity;
+  let bestPath: BassTabPosition[] = [];
+
+  for (let windowStart = 1; windowStart <= 12; windowStart++) {
+    const n = candidatesPerNote.length;
+    const dp: number[][] = [];
+    const parent: number[][] = [];
+
+    const noteCost = (pos: BassTabPosition): number => {
+      if (pos.fret === 0) return 1000;
+      let cost = pos.fret * 0.08;
+      if (pos.fret >= windowStart && pos.fret <= windowStart + 3) {
+        cost += 0;
+      } else if (pos.fret === windowStart + 4) {
+        cost += 3;
+      } else {
+        const dist =
+          pos.fret < windowStart ? windowStart - pos.fret : pos.fret - (windowStart + 4);
+        cost += 14 * dist;
+      }
+      // Slight preference against muddy low-B string when an equivalent E-string box exists
+      if (isFiveString && pos.stringIndex === 4) {
+        cost += 1.5;
+      }
+      return cost;
+    };
+
+    dp[0] = candidatesPerNote[0].map((c) => noteCost(c));
+    parent[0] = candidatesPerNote[0].map(() => -1);
+
+    for (let t = 1; t < n; t++) {
+      const currCands = candidatesPerNote[t];
+      const prevCands = candidatesPerNote[t - 1];
+      dp[t] = new Array(currCands.length).fill(Infinity);
+      parent[t] = new Array(currCands.length).fill(0);
+
+      for (let j = 0; j < currCands.length; j++) {
+        const curr = currCands[j];
+        const base = noteCost(curr);
+        for (let k = 0; k < prevCands.length; k++) {
+          const prev = prevCands[k];
+          const trans =
+            0.35 * Math.abs(curr.fret - prev.fret) +
+            0.45 * Math.abs(curr.stringIndex - prev.stringIndex);
+          const candidateCost = dp[t - 1][k] + base + trans;
+          if (candidateCost < dp[t][j]) {
+            dp[t][j] = candidateCost;
+            parent[t][j] = k;
+          }
+        }
+      }
+    }
+
+    let endIdx = 0;
+    let endCost = dp[n - 1][0];
+    for (let j = 1; j < dp[n - 1].length; j++) {
+      if (dp[n - 1][j] < endCost) {
+        endCost = dp[n - 1][j];
+        endIdx = j;
+      }
+    }
+
+    if (endCost < bestTotalCost) {
+      bestTotalCost = endCost;
+      const path: BassTabPosition[] = new Array(n);
+      let idx = endIdx;
+      for (let t = n - 1; t >= 0; t--) {
+        path[t] = candidatesPerNote[t][idx];
+        idx = parent[t][idx];
+      }
+      bestPath = path;
+    }
+  }
+
+  return bestPath;
 }
 
 // Fix: Corrected voice tag syntax and implemented generateRhythmXML for 16th note grids
-export function generateMusicXML(midiNotes: number[], isFiveString: boolean = false, naming: 'english' | 'latin' = 'english'): string {
+export function generateMusicXML(
+  midiNotes: number[],
+  isFiveString: boolean = false,
+  naming: 'english' | 'latin' = 'english',
+  preferNoOpenStrings: boolean = true
+): string {
   const stringsCount = isFiveString ? 5 : 4;
+  const tabPositions = getBassPositionsForSequence(midiNotes, isFiveString, preferNoOpenStrings);
   
   const notationNotes = midiNotes.map((midi) => {
     const rawName = NOTE_NAMES_ENGLISH[midi % 12];
@@ -77,12 +295,12 @@ export function generateMusicXML(midiNotes: number[], isFiveString: boolean = fa
       </note>`;
   }).join('');
 
-  const tabNotes = midiNotes.map((midi) => {
+  const tabNotes = midiNotes.map((midi, idx) => {
     const rawName = NOTE_NAMES_ENGLISH[midi % 12];
     const step = rawName.charAt(0);
     const alter = rawName.includes('#') ? 1 : 0;
     const octave = Math.floor(midi / 12) - 1;
-    const pos = getBassFretForMidi(midi, isFiveString);
+    const pos = tabPositions[idx] || getBassFretForMidi(midi, isFiveString, preferNoOpenStrings);
     
     return `
       <note>

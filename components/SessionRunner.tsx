@@ -1,17 +1,27 @@
-import { Box, Typography, IconButton, Container, CircularProgress, Alert, Paper, Stack, useTheme, Fade, Zoom, keyframes } from '@mui/material';
+import { Box, Typography, IconButton, Container, CircularProgress, Alert, Paper, Stack, useTheme, Fade, Button, Chip, Divider, ToggleButton, ToggleButtonGroup, keyframes } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import SchoolIcon from '@mui/icons-material/School';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import PianoIcon from '@mui/icons-material/Piano';
+import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useStore, SessionResult } from '../state/store';
 import { AudioEngine, AudioStats } from '../audio/audioEngine';
 import { FretPosition, BASS_STRINGS } from '../data/fretboard';
-import { validateNote, translateNoteName } from '../audio/noteUtils';
+import { PentatonicTaskConfig } from '../data/pentatonicProgram';
+import { validateNote, translateNoteName, translateTextWithNotes, getBassPositionsForSequence } from '../audio/noteUtils';
 import { translations } from '../localization/translations';
 import TimerBar from './TimerBar';
 import NoteDisplay from './NoteDisplay';
 import VuMeter from './VuMeter';
 import ScoreSummary from './ScoreSummary';
 import SheetMusic from './SheetMusic';
+import PentatonicFretboard from './PentatonicFretboard';
 
 const screenShake = keyframes`
   0% { transform: translate(0, 0); }
@@ -40,7 +50,8 @@ interface SessionRunnerProps {
   programId?: string;
   onReplay?: () => void;
   onNext?: { label: string; action: () => void };
-  sequence?: number[]; 
+  sequence?: number[];
+  pentatonicConfig?: PentatonicTaskConfig;
 }
 
 export interface ExtendedSessionResult extends SessionResult {
@@ -260,14 +271,19 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   programId = 'free',
   onReplay,
   onNext,
-  sequence
+  sequence,
+  pentatonicConfig
 }) => {
   const { settings, addSessionResult, recordAttempt } = useStore();
   const theme = useTheme();
   const t = translations[settings.language].session;
+  const pt = translations[settings.language].pentatonic;
   const isDarkMode = theme.palette.mode === 'dark';
   
-  const [countdown, setCountdown] = useState<number | 'GO' | null>(3);
+  const [hasStarted, setHasStarted] = useState<boolean>(!pentatonicConfig);
+  const [countdown, setCountdown] = useState<number | 'GO' | null>(pentatonicConfig ? null : 3);
+  const [labelMode, setLabelMode] = useState<'degrees' | 'notes'>('degrees');
+  const [viewMode, setViewMode] = useState<'neck' | 'tab' | 'both'>('neck');
   const [currentIdx, setCurrentIdx] = useState(0); 
   const [sequenceIdx, setSequenceIdx] = useState(0); 
   const [score, setScore] = useState(0);
@@ -294,6 +310,16 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   const lastRmsRef = useRef<number>(0);
 
   const isSequenceMode = !!sequence && sequence.length > 0;
+
+  const sequenceTabPositions = useMemo(() => {
+    if (!isSequenceMode || !sequence) return [];
+    return getBassPositionsForSequence(sequence, settings.isFiveString, true);
+  }, [isSequenceMode, sequence, settings.isFiveString]);
+
+  const currentTargetPosition = useMemo(() => {
+    if (!isSequenceMode) return null;
+    return sequenceTabPositions[sequenceIdx] || null;
+  }, [isSequenceMode, sequenceTabPositions, sequenceIdx]);
   
   const currentTargetMidi = useMemo(() => {
     if (isSequenceMode && sequence) {
@@ -426,7 +452,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   }, [isFinished, isProcessingFailure, isProcessingSuccess, settings.timeLimit, currentTargetName, isSequenceMode, currentIdx, questions.length, currentQuestionMeta, nextStep, finishSession, recordAttempt, detected]);
 
   const handleAudioProcess = useCallback((stats: AudioStats) => {
-    if (countdown !== null || isFinished || isProcessingFailure || isProcessingSuccess) return; 
+    if (!hasStarted || countdown !== null || isFinished || isProcessingFailure || isProcessingSuccess) return; 
     setDetected(stats);
     
     const isActive = stats.rms >= settings.rmsThreshold;
@@ -494,7 +520,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         }
       }
     }
-  }, [currentTargetMidi, settings, handleSuccess, handleFailure, countdown, isFinished, isProcessingFailure, isProcessingSuccess]);
+  }, [currentTargetMidi, settings, handleSuccess, handleFailure, hasStarted, countdown, isFinished, isProcessingFailure, isProcessingSuccess]);
 
   const processRef = useRef(handleAudioProcess);
   useEffect(() => {
@@ -502,7 +528,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   }, [handleAudioProcess]);
 
   useEffect(() => {
-    if (countdown === null) return;
+    if (!hasStarted || countdown === null) return;
     const timer = setTimeout(() => {
       if (countdown === 3) setCountdown(2);
       else if (countdown === 2) setCountdown(1);
@@ -513,10 +539,10 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
       }
     }, 1000);
     return () => clearTimeout(timer);
-  }, [countdown]);
+  }, [hasStarted, countdown]);
 
   useEffect(() => {
-    if (countdown !== null) return; 
+    if (!hasStarted || countdown !== null) return; 
 
     const audioProxy = (stats: AudioStats) => processRef.current(stats);
     audioEngineRef.current = new AudioEngine(audioProxy);
@@ -534,10 +560,10 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     return () => {
       if (audioEngineRef.current) audioEngineRef.current.stop();
     };
-  }, [settings.selectedMicId, countdown]);
+  }, [settings.selectedMicId, hasStarted, countdown]);
 
   useEffect(() => {
-    if (countdown !== null) return; 
+    if (!hasStarted || countdown !== null) return; 
 
     timerRef.current = setInterval(() => {
       if (engineError || isFinished || isProcessingFailure || isProcessingSuccess) return;
@@ -553,7 +579,7 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [settings.timeLimit, engineError, isFinished, handleFailure, countdown, isProcessingFailure, isProcessingSuccess]);
+  }, [settings.timeLimit, engineError, isFinished, handleFailure, hasStarted, countdown, isProcessingFailure, isProcessingSuccess]);
 
   const summaryResult = useMemo(() => {
     if (!isFinished) return null;
@@ -597,6 +623,175 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
         onReplay={onReplay} 
         onNext={showNext ? onNext : undefined} 
       />
+    );
+  }
+
+  // Pre-session Theory & Shape Briefing (Pentatonic Power)
+  if (pentatonicConfig && !hasStarted) {
+    const theoryTipText = translateTextWithNotes(
+      settings.language === 'fr'
+        ? pentatonicConfig.theoryTip_fr
+        : settings.language === 'es'
+        ? pentatonicConfig.theoryTip_es
+        : pentatonicConfig.theoryTip,
+      settings.noteNaming
+    );
+    const musicalValueText = translateTextWithNotes(
+      settings.language === 'fr'
+        ? pentatonicConfig.musicalValue_fr
+        : settings.language === 'es'
+        ? pentatonicConfig.musicalValue_es
+        : pentatonicConfig.musicalValue,
+      settings.noteNaming
+    );
+    const relQualLabel =
+      pentatonicConfig.relativePairQuality === 'major'
+        ? (settings.language === 'fr' ? 'Majeure' : settings.language === 'es' ? 'Mayor' : 'Major')
+        : (settings.language === 'fr' ? 'Mineure' : settings.language === 'es' ? 'Menor' : 'Minor');
+    const relativeShortcutLabel = pt.relativeShortcut
+      .replace('{note}', translateNoteName(pentatonicConfig.relativePairNote, settings.noteNaming))
+      .replace('{quality}', relQualLabel);
+
+    return (
+      <Fade in={true} timeout={350}>
+        <Container maxWidth="md" sx={{ py: 2 }}>
+          <Stack spacing={2.5}>
+            {/* Header with Exit */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
+              <Box>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+                  <Chip
+                    size="small"
+                    color={pentatonicConfig.quality === 'major' ? 'info' : 'warning'}
+                    label={pentatonicConfig.quality === 'major' ? pt.majorBadge : pt.minorBadge}
+                    sx={{ fontWeight: 900, borderRadius: 1.5 }}
+                  />
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    label={pt.shapeOfFive.replace('{num}', String(pentatonicConfig.shapeNumber))}
+                    sx={{ fontWeight: 800, borderRadius: 1.5 }}
+                  />
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={pt.closedBoxBadge}
+                    sx={{ fontWeight: 700, borderRadius: 1.5 }}
+                  />
+                </Stack>
+                <Typography variant="h5" fontWeight={900} sx={{ letterSpacing: -0.5 }}>
+                  {title}
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                startIcon={<ArrowBackIcon />}
+                onClick={onFinish}
+                sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
+              >
+                {pt.exitSession}
+              </Button>
+            </Box>
+
+            {/* Theory Tip & Musical Value Card */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 2.25, sm: 3 },
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: alpha(theme.palette.primary.main, 0.3),
+                bgcolor: alpha(theme.palette.primary.main, isDarkMode ? 0.08 : 0.04),
+              }}
+            >
+              <Stack spacing={2}>
+                <Box>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <SchoolIcon color="primary" fontSize="small" />
+                    <Typography variant="subtitle1" fontWeight={900} color="primary">
+                      {pt.briefingTitle}
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body1" sx={{ lineHeight: 1.65, fontWeight: 500 }}>
+                    {theoryTipText}
+                  </Typography>
+                </Box>
+
+                <Divider />
+
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                  <LightbulbIcon sx={{ color: '#ffb300', mt: 0.25, flexShrink: 0 }} fontSize="small" />
+                  <Box>
+                    <Typography variant="caption" fontWeight={900} sx={{ textTransform: 'uppercase', letterSpacing: 1, color: isDarkMode ? '#ffb300' : '#b26a00', display: 'block', mb: 0.25 }}>
+                      {pt.whyItMatters}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                      {musicalValueText}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box>
+                  <Chip
+                    size="small"
+                    icon={<MusicNoteIcon fontSize="small" />}
+                    label={relativeShortcutLabel}
+                    sx={{
+                      fontWeight: 800,
+                      borderRadius: 1.5,
+                      bgcolor: alpha('#ffb300', 0.14),
+                      color: isDarkMode ? '#ffb300' : '#8c5300',
+                    }}
+                  />
+                </Box>
+              </Stack>
+            </Paper>
+
+            {/* Fretboard Shape Preview */}
+            <Box>
+              <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1.2, display: 'block', mb: 1, ml: 0.5 }}>
+                {pt.shapePreviewTitle}
+              </Typography>
+              <PentatonicFretboard
+                config={pentatonicConfig}
+                shapePositions={sequenceTabPositions}
+                isFiveString={settings.isFiveString}
+                noteNaming={settings.noteNaming}
+                labelMode={labelMode}
+                onLabelModeChange={setLabelMode}
+              />
+            </Box>
+
+            {/* Primary CTA to start countdown */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1 }}>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<PlayArrowIcon />}
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  setHasStarted(true);
+                  setCountdown(3);
+                }}
+                sx={{
+                  px: 4.5,
+                  py: 1.6,
+                  borderRadius: 3,
+                  fontWeight: 900,
+                  fontSize: '1.05rem',
+                  textTransform: 'none',
+                  boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.35)}`,
+                }}
+              >
+                {pt.readyToPlay}
+              </Button>
+            </Box>
+          </Stack>
+        </Container>
+      </Fade>
     );
   }
 
@@ -682,162 +877,345 @@ const SessionRunner: React.FC<SessionRunnerProps> = ({
   }
 
   // Session UI (Active)
+  const targetStringLabel = currentTargetPosition
+    ? translateNoteName(BASS_STRINGS[currentTargetPosition.stringIndex]?.name || '', settings.noteNaming)
+    : '';
+
   return (
     <Box sx={{ 
-      minHeight: '85vh', 
+      minHeight: pentatonicConfig ? 'auto' : '85vh', 
       transition: 'background-color 0.3s ease',
       bgcolor: isProcessingFailure 
         ? alpha(theme.palette.error.main, 0.08) 
         : (isProcessingSuccess ? alpha(theme.palette.success.main, 0.08) : 'transparent'),
       animation: isProcessingFailure ? `${screenShake} 0.5s cubic-bezier(.36,.07,.19,.97) both` : 'none',
       borderRadius: 4,
-      px: { xs: 1, sm: 3 },
-      py: 2
+      px: { xs: 1, sm: 2.5 },
+      py: pentatonicConfig ? 1 : 2
     }}>
-      <Container maxWidth="md">
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-          <Box>
+      <Container maxWidth="md" disableGutters={!!pentatonicConfig}>
+        {/* Header Bar */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, gap: 1.5, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap' }}>
             <Typography 
-              variant="subtitle2" 
+              variant={pentatonicConfig ? 'subtitle1' : 'subtitle2'} 
               color={isProcessingFailure ? "error" : (isProcessingSuccess ? "success" : "primary")} 
-              sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, transition: 'color 0.2s' }}
+              sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.6, transition: 'color 0.2s' }}
             >
               {title}
             </Typography>
-            <Typography variant="h6" color="textSecondary">
-              {isSequenceMode ? t.scaleDrill : `${t.note} ${currentIdx + 1} / ${questions.length}`}
-            </Typography>
+            <Chip
+              size="small"
+              variant="outlined"
+              label={
+                isSequenceMode && sequence
+                  ? (pentatonicConfig
+                      ? pt.stepProgress.replace('{current}', String(sequenceIdx + 1)).replace('{total}', String(sequence.length))
+                      : t.scaleDrill)
+                  : `${t.note} ${currentIdx + 1} / ${questions.length}`
+              }
+              sx={{ fontWeight: 800, height: 22, fontSize: '0.72rem' }}
+            />
           </Box>
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="h6" color="primary">{t.score}: {score}</Typography>
-            <IconButton onClick={onFinish} size="small"><CloseIcon /></IconButton>
-          </Box>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Typography variant="subtitle1" color="primary" fontWeight={900}>{t.score}: {score}</Typography>
+            {pentatonicConfig ? (
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                startIcon={<ArrowBackIcon />}
+                onClick={onFinish}
+                sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none', py: 0.35 }}
+              >
+                {pt.exitSession}
+              </Button>
+            ) : (
+              <IconButton onClick={onFinish} size="small"><CloseIcon /></IconButton>
+            )}
+          </Stack>
         </Box>
 
         <TimerBar remaining={timeLeft} total={settings.timeLimit} />
 
-        {isSequenceMode && sequence && (
-          <Box sx={{ opacity: isProcessingFailure ? 0.3 : 1, transition: 'opacity 0.2s' }}>
-            <SheetMusic 
-              midiNotes={sequence} 
-              currentIndex={sequenceIdx} 
-              isFiveString={settings.isFiveString}
-            />
-          </Box>
-        )}
+        {pentatonicConfig && sequence ? (
+          /* PENTATONIC SINGLE-SCREEN COCKPIT */
+          <Stack spacing={1.5} sx={{ mt: 1.5 }}>
+            {/* Top Unified Play & Detection Bar — always immediately visible without scrolling */}
+            <Paper
+              elevation={0}
+              sx={{
+                px: { xs: 1.5, sm: 2.5 },
+                py: 1.5,
+                borderRadius: 3,
+                border: '2px solid',
+                borderColor: isProcessingFailure
+                  ? 'error.main'
+                  : isProcessingSuccess
+                  ? 'success.main'
+                  : alpha(theme.palette.primary.main, 0.25),
+                bgcolor: 'background.paper',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: { xs: 1.5, sm: 2.5 },
+                flexWrap: 'wrap',
+                animation: isProcessingSuccess ? `${successPulse} 0.35s ease-out` : 'none',
+                transition: 'border-color 0.2s ease',
+              }}
+            >
+              {/* Zone 1: Next Note to Play + Exact String/Fret */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: { xs: 'auto', sm: 195 } }}>
+                <Box sx={{ textAlign: 'center', minWidth: 68 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.62rem', display: 'block', mb: 0.25 }}
+                  >
+                    {pt.nextNoteToPlay}
+                  </Typography>
+                  <Typography
+                    variant="h2"
+                    fontWeight={900}
+                    sx={{
+                      fontSize: { xs: '2.6rem', sm: '3.25rem' },
+                      lineHeight: 1,
+                      letterSpacing: -1.5,
+                      color: isProcessingFailure ? 'error.main' : isProcessingSuccess ? 'success.main' : 'primary.main',
+                      transition: 'color 0.2s',
+                    }}
+                  >
+                    {translateNoteName(currentTargetName, settings.noteNaming).toUpperCase()}
+                  </Typography>
+                </Box>
 
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column',
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          gap: { xs: 2, md: 4 }, 
-          mb: 8, 
-          mt: isSequenceMode ? 2 : 6,
-          animation: isProcessingSuccess ? `${successPulse} 0.4s ease-out` : 'none'
-        }}>
-          <Box sx={{ textAlign: 'center', width: { xs: 'auto', sm: 220 } }}>
-            <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, display: 'block', mb: 0.5, opacity: 0.8 }}>
-              {t.note}
-            </Typography>
-            <Box sx={{ height: { xs: '5rem', sm: '7rem' }, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Typography 
-                variant="h1" 
-                fontWeight="900" 
-                sx={{ 
-                  textTransform: 'uppercase', 
-                  fontSize: { xs: '5rem', sm: '6.5rem', md: '7.5rem' },
-                  lineHeight: 1,
-                  letterSpacing: -4,
-                  color: isProcessingFailure ? 'error.main' : (isProcessingSuccess ? 'success.main' : 'text.primary'),
-                  whiteSpace: 'nowrap',
-                  transition: 'color 0.2s'
+                {currentTargetPosition && (
+                  <Stack spacing={0.5}>
+                    <Chip
+                      size="small"
+                      color="primary"
+                      label={`${targetStringLabel} • ${pt.fretLabel} ${currentTargetPosition.fret}`}
+                      sx={{ fontWeight: 900, fontSize: '0.75rem', borderRadius: 1.5 }}
+                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <CircularProgress
+                        variant="determinate"
+                        value={(isProcessingFailure || isProcessingSuccess) ? 100 : stabilityCounter}
+                        size={18}
+                        thickness={6}
+                        color={isProcessingSuccess ? 'success' : isProcessingFailure ? 'error' : 'primary'}
+                      />
+                      <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '0.68rem' }}>
+                        {t.stability}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                )}
+              </Box>
+
+              {/* Zone 2: Live Detected Note */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <NoteDisplay
+                  detectedNote={detected && detected.rms >= settings.rmsThreshold ? detected.pitch : null}
+                  targetNoteName={currentTargetName}
+                  isCorrect={isProcessingSuccess || stabilityCounter === 100}
+                  isAlmost={stabilityCounter > 0 && stabilityCounter < 100}
+                  isFailure={isProcessingFailure}
+                  debug={false}
+                  rms={detected?.rms || 0}
+                />
+              </Box>
+
+              {/* Zone 3: Input Level Meter */}
+              <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: 170 }, maxWidth: { sm: 240 }, '& > div': { mt: 0 } }}>
+                <VuMeter rms={detected?.rms || 0} threshold={settings.rmsThreshold} />
+              </Box>
+            </Paper>
+
+            {/* View Switcher Bar (Bass Neck | TAB & Staff | Both) */}
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={viewMode}
+                onChange={(_, val) => val && setViewMode(val)}
+                sx={{
+                  bgcolor: 'background.paper',
+                  borderRadius: 2,
                 }}
               >
-                {translateNoteName(currentTargetName, settings.noteNaming).toUpperCase()}
-              </Typography>
+                <ToggleButton value="neck" sx={{ fontWeight: 800, textTransform: 'none', px: 2, py: 0.45, gap: 0.75, fontSize: '0.78rem' }}>
+                  <PianoIcon sx={{ fontSize: 16 }} />
+                  {pt.viewNeck}
+                </ToggleButton>
+                <ToggleButton value="tab" sx={{ fontWeight: 800, textTransform: 'none', px: 2, py: 0.45, gap: 0.75, fontSize: '0.78rem' }}>
+                  <QueueMusicIcon sx={{ fontSize: 16 }} />
+                  {pt.viewTab}
+                </ToggleButton>
+                <ToggleButton value="both" sx={{ fontWeight: 800, textTransform: 'none', px: 2, py: 0.45, gap: 0.75, fontSize: '0.78rem' }}>
+                  <ViewModuleIcon sx={{ fontSize: 16 }} />
+                  {pt.viewBoth}
+                </ToggleButton>
+              </ToggleButtonGroup>
             </Box>
-          </Box>
 
-          {!isSequenceMode && questions[currentIdx] && (
-            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: { xs: '100%', md: 600 }, justifyContent: 'center', bgcolor: 'transparent' }}>
-              {settings.beginnerMode ? (
-                <FretboardVisualAid 
-                  stringIdx={questions[currentIdx].string} 
-                  fret={questions[currentIdx].fret} 
-                  isFiveString={settings.isFiveString} 
-                  noteNaming={settings.noteNaming}
-                  isFailure={isProcessingFailure}
-                  isSuccess={isProcessingSuccess}
+            {/* Interactive Visual Aid: Neck / TAB / Both */}
+            {(viewMode === 'neck' || viewMode === 'both') && (
+              <PentatonicFretboard
+                config={pentatonicConfig}
+                shapePositions={sequenceTabPositions}
+                targetPosition={currentTargetPosition}
+                detectedMidi={detected && detected.rms >= settings.rmsThreshold && detected.pitch ? detected.pitch.midi : null}
+                isFiveString={settings.isFiveString}
+                noteNaming={settings.noteNaming}
+                labelMode={labelMode}
+                onLabelModeChange={setLabelMode}
+                isFailure={isProcessingFailure}
+                isSuccess={isProcessingSuccess}
+                compact={true}
+              />
+            )}
+
+            {(viewMode === 'tab' || viewMode === 'both') && (
+              <Box sx={{ opacity: isProcessingFailure ? 0.3 : 1, transition: 'opacity 0.2s' }}>
+                <SheetMusic
+                  midiNotes={sequence}
+                  currentIndex={sequenceIdx}
+                  isFiveString={settings.isFiveString}
+                  preferNoOpenStrings={true}
+                  compact={true}
                 />
-              ) : (
-                <Paper 
-                  elevation={0}
-                  sx={{ 
-                    px: 4, 
-                    py: 2, 
-                    borderRadius: 2, 
-                    bgcolor: isProcessingFailure ? alpha(theme.palette.error.main, 0.1) : (isProcessingSuccess ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.primary.main, settings.themeMode === 'dark' ? 0.08 : 0.04)),
-                    color: isProcessingFailure ? 'error.main' : (isProcessingSuccess ? 'success.main' : 'primary.main'),
-                    border: '2px solid',
-                    borderColor: isProcessingFailure ? 'error.main' : (isProcessingSuccess ? 'success.main' : alpha(theme.palette.primary.main, 0.2)),
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minWidth: { xs: 160, sm: 200 },
-                    minHeight: 110, 
-                    boxShadow: 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, mb: 1, opacity: 0.8, textAlign: 'center' }}>
-                    {t.pluckString}
+              </Box>
+            )}
+          </Stack>
+        ) : (
+          /* STANDARD SESSION UI (Fretboard Mastery & Free Training) */
+          <>
+            {isSequenceMode && sequence && (
+              <Box sx={{ opacity: isProcessingFailure ? 0.3 : 1, transition: 'opacity 0.2s' }}>
+                <SheetMusic 
+                  midiNotes={sequence} 
+                  currentIndex={sequenceIdx} 
+                  isFiveString={settings.isFiveString}
+                  preferNoOpenStrings={true}
+                />
+              </Box>
+            )}
+
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: { xs: 2, md: 4 }, 
+              mb: 8, 
+              mt: isSequenceMode ? 2 : 6,
+              animation: isProcessingSuccess ? `${successPulse} 0.4s ease-out` : 'none'
+            }}>
+              <Box sx={{ textAlign: 'center', width: { xs: 'auto', sm: 220 } }}>
+                <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, display: 'block', mb: 0.5, opacity: 0.8 }}>
+                  {t.note}
+                </Typography>
+                <Box sx={{ height: { xs: '5rem', sm: '7rem' }, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography 
+                    variant="h1" 
+                    fontWeight="900" 
+                    sx={{ 
+                      textTransform: 'uppercase', 
+                      fontSize: { xs: '5rem', sm: '6.5rem', md: '7.5rem' },
+                      lineHeight: 1,
+                      letterSpacing: -4,
+                      color: isProcessingFailure ? 'error.main' : (isProcessingSuccess ? 'success.main' : 'text.primary'),
+                      whiteSpace: 'nowrap',
+                      transition: 'color 0.2s'
+                    }}
+                  >
+                    {translateNoteName(currentTargetName, settings.noteNaming).toUpperCase()}
                   </Typography>
-                  <Typography variant="h3" sx={{ fontWeight: 900, textAlign: 'center' }}>
-                    {translateNoteName(questions[currentIdx].stringName, settings.noteNaming).toUpperCase()}
-                  </Typography>
-                </Paper>
+                </Box>
+              </Box>
+
+              {!isSequenceMode && questions[currentIdx] && (
+                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: { xs: '100%', md: 600 }, justifyContent: 'center', bgcolor: 'transparent' }}>
+                  {settings.beginnerMode ? (
+                    <FretboardVisualAid 
+                      stringIdx={questions[currentIdx].string} 
+                      fret={questions[currentIdx].fret} 
+                      isFiveString={settings.isFiveString} 
+                      noteNaming={settings.noteNaming}
+                      isFailure={isProcessingFailure}
+                      isSuccess={isProcessingSuccess}
+                    />
+                  ) : (
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        px: 4, 
+                        py: 2, 
+                        borderRadius: 2, 
+                        bgcolor: isProcessingFailure ? alpha(theme.palette.error.main, 0.1) : (isProcessingSuccess ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.primary.main, settings.themeMode === 'dark' ? 0.08 : 0.04)),
+                        color: isProcessingFailure ? 'error.main' : (isProcessingSuccess ? 'success.main' : 'primary.main'),
+                        border: '2px solid',
+                        borderColor: isProcessingFailure ? 'error.main' : (isProcessingSuccess ? 'success.main' : alpha(theme.palette.primary.main, 0.2)),
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: { xs: 160, sm: 200 },
+                        minHeight: 110, 
+                        boxShadow: 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, mb: 1, opacity: 0.8, textAlign: 'center' }}>
+                        {t.pluckString}
+                      </Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 900, textAlign: 'center' }}>
+                        {translateNoteName(questions[currentIdx].stringName, settings.noteNaming).toUpperCase()}
+                      </Typography>
+                    </Paper>
+                  )}
+                </Box>
               )}
             </Box>
-          )}
-        </Box>
 
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          gap: { xs: 3, md: 5 }, 
-          flexWrap: 'wrap' 
-        }}>
-          <NoteDisplay 
-            detectedNote={detected && detected.rms >= settings.rmsThreshold ? detected.pitch : null} 
-            targetNoteName={currentTargetName}
-            isCorrect={isProcessingSuccess || stabilityCounter === 100}
-            isAlmost={stabilityCounter > 0 && stabilityCounter < 100}
-            isFailure={isProcessingFailure}
-            debug={false}
-            rms={detected?.rms || 0}
-          />
-          
-          <Box sx={{ 
-            width: { xs: '100%', sm: 280 }, 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'center' 
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, justifyContent: 'center' }}>
-              <CircularProgress 
-                variant="determinate" 
-                value={(isProcessingFailure || isProcessingSuccess) ? 100 : stabilityCounter} 
-                size={24} 
-                thickness={6}
-                color={isProcessingSuccess ? "success" : (isProcessingFailure ? "error" : "primary")}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              gap: { xs: 3, md: 5 }, 
+              flexWrap: 'wrap' 
+            }}>
+              <NoteDisplay 
+                detectedNote={detected && detected.rms >= settings.rmsThreshold ? detected.pitch : null} 
+                targetNoteName={currentTargetName}
+                isCorrect={isProcessingSuccess || stabilityCounter === 100}
+                isAlmost={stabilityCounter > 0 && stabilityCounter < 100}
+                isFailure={isProcessingFailure}
+                debug={false}
+                rms={detected?.rms || 0}
               />
+              
+              <Box sx={{ 
+                width: { xs: '100%', sm: 280 }, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'center' 
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, justifyContent: 'center' }}>
+                  <CircularProgress 
+                    variant="determinate" 
+                    value={(isProcessingFailure || isProcessingSuccess) ? 100 : stabilityCounter} 
+                    size={24} 
+                    thickness={6}
+                    color={isProcessingSuccess ? "success" : (isProcessingFailure ? "error" : "primary")}
+                  />
+                </Box>
+                <VuMeter rms={detected?.rms || 0} threshold={settings.rmsThreshold} />
+              </Box>
             </Box>
-            <VuMeter rms={detected?.rms || 0} threshold={settings.rmsThreshold} />
-          </Box>
-        </Box>
+          </>
+        )}
       </Container>
     </Box>
   );

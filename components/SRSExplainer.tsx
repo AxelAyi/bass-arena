@@ -24,7 +24,7 @@ const SRSExplainer: React.FC<SRSExplainerProps> = ({ open, onClose }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+      <DialogTitle component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
         <AutoAwesomeIcon color="primary" />
         <Typography variant="h6" fontWeight="900">{t.title}</Typography>
       </DialogTitle>

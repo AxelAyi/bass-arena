@@ -56,7 +56,7 @@ const MicPermissionDialog: React.FC<MicPermissionDialogProps> = ({ open, onClose
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ textAlign: 'center', pb: 0 }}>
+      <DialogTitle component="div" sx={{ textAlign: 'center', pb: 0 }}>
         <MicIcon color="primary" sx={{ fontSize: 48, mb: 1 }} />
         <Typography variant="h6">{t.required}</Typography>
       </DialogTitle>

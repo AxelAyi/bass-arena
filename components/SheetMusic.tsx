@@ -9,9 +9,17 @@ interface SheetMusicProps {
   midiNotes: number[];
   currentIndex: number;
   isFiveString?: boolean;
+  preferNoOpenStrings?: boolean;
+  compact?: boolean;
 }
 
-const SheetMusic: React.FC<SheetMusicProps> = ({ midiNotes, currentIndex, isFiveString = false }) => {
+const SheetMusic: React.FC<SheetMusicProps> = ({
+  midiNotes,
+  currentIndex,
+  isFiveString = false,
+  preferNoOpenStrings = true,
+  compact = false,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const osmdRef = useRef<any>(null);
   const [loading, setLoading] = React.useState(true);
@@ -55,7 +63,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({ midiNotes, currentIndex, isFive
         });
 
         if (midiNotes.length > 0) {
-          const xml = generateMusicXML(midiNotes, isFiveString, settings.noteNaming);
+          const xml = generateMusicXML(midiNotes, isFiveString, settings.noteNaming, preferNoOpenStrings);
           await osmdRef.current.load(xml);
           osmdRef.current.render();
           
@@ -86,7 +94,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({ midiNotes, currentIndex, isFive
         } catch (e) {}
       }
     };
-  }, [midiNotes, isFiveString, settings.noteNaming, theme.palette.primary.main]);
+  }, [midiNotes, isFiveString, preferNoOpenStrings, settings.noteNaming, theme.palette.primary.main]);
 
   useEffect(() => {
     if (osmdRef.current && osmdRef.current.cursor && !loading) {
@@ -105,14 +113,16 @@ const SheetMusic: React.FC<SheetMusicProps> = ({ midiNotes, currentIndex, isFive
 
   return (
     <Paper 
-      elevation={2} 
+      elevation={compact ? 0 : 2} 
       sx={{ 
-        p: 1, 
+        p: compact ? 0.5 : 1, 
         bgcolor: '#fff', 
-        borderRadius: 2, 
+        borderRadius: compact ? 3 : 2, 
+        border: compact ? '2px solid' : 'none',
+        borderColor: 'divider',
         overflow: 'hidden', 
-        minHeight: 280, 
-        mb: 3, 
+        minHeight: compact ? 200 : 280, 
+        mb: compact ? 0 : 3, 
         display: 'flex', 
         flexDirection: 'column', 
         alignItems: 'center', 
@@ -153,7 +163,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({ midiNotes, currentIndex, isFive
           style={{ 
             width: '100%',
             minWidth: '600px', 
-            minHeight: '240px',
+            minHeight: compact ? '185px' : '240px',
             display: 'block'
           }} 
         />

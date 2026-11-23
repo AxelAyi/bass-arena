@@ -49,7 +49,7 @@ const Tuner: React.FC<TunerProps> = ({ open, onClose }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5 }}>
+      <DialogTitle component="div" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <MusicNoteIcon color="primary" sx={{ mr: 1, fontSize: 20 }} />
           <Typography variant="subtitle1" fontWeight="bold">{nt.tuner}</Typography>

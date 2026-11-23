@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper, FormControlLabel, Switch, IconButton, keyframes, alpha, useTheme, Stack } from '@mui/material';
+import { Box, Typography, Card, CardContent, CardActionArea, LinearProgress, Chip, Alert, Snackbar, Tabs, Tab, Paper, FormControlLabel, Switch, IconButton, Button, keyframes, alpha, useTheme, Stack } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import * as ReactRouterDOM from 'react-router-dom';
 import LockIcon from '@mui/icons-material/Lock';
@@ -11,17 +11,21 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
+import SchoolIcon from '@mui/icons-material/School';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 import { PROGRAMS, DayTask } from '../data/program30days';
+import { MODE_DEFINITIONS, MODE_ORDER } from '../data/modesProgram';
 import { useStore } from '../state/store';
 import { translations } from '../localization/translations';
 import SessionRunner from '../components/SessionRunner';
 import EarTrainingSessionRunner from '../components/EarTrainingSessionRunner';
+import ModeSessionRunner from '../components/ModeSessionRunner';
 import MicPermissionDialog from '../components/MicPermissionDialog';
 import SRSExplainer from '../components/SRSExplainer';
 import SRSTimeline from '../components/SRSTimeline';
 import { getAllPositionsInRanges, FretPosition } from '../data/fretboard';
-import { translateTextWithNotes } from '../audio/noteUtils';
+import { translateNoteName, translateTextWithNotes } from '../audio/noteUtils';
 
 const { useParams, useNavigate } = ReactRouterDOM as any;
 
@@ -73,7 +77,20 @@ const Program: React.FC = () => {
     else clean = (type === 'title' ? task.title : task.description);
 
     if (!settings.isFiveString) {
-      clean = clean.replace(/\s*&\s*B/gi, '').replace(/\s*y\s*Si/gi, '').replace(/\s*&\s*Si/gi, '').replace(/\s*and\s*B/gi, '').replace(/B\s*&\s*/gi, '').replace(/Si\s*&\s*/gi, '').replace(/B\s*string/gi, 'lower strings').replace(/Corde\s*Si/gi, 'cordes graves').replace(/Cuerda\s*Si/gi, 'cuerdas graves').replace(/B:/gi, ':').replace(/Si:/gi, ':').replace(/\s+/g, ' ').trim();
+      clean = clean
+        .replace(/\s*&\s*B(?![\p{L}\p{M}])/gu, '')
+        .replace(/\s*y\s*Si(?![\p{L}\p{M}])/gu, '')
+        .replace(/\s*&\s*Si(?![\p{L}\p{M}])/gu, '')
+        .replace(/\s*\band\s+B(?![\p{L}\p{M}])/gu, '')
+        .replace(/(?<![\p{L}\p{M}])B\s*&\s*/gu, '')
+        .replace(/(?<![\p{L}\p{M}])Si\s*&\s*/gu, '')
+        .replace(/(?<![\p{L}\p{M}])B\s+string(?![\p{L}\p{M}])/giu, 'lower strings')
+        .replace(/(?<![\p{L}\p{M}])Corde\s+Si(?![\p{L}\p{M}])/giu, 'cordes graves')
+        .replace(/(?<![\p{L}\p{M}])Cuerda\s+Si(?![\p{L}\p{M}])/giu, 'cuerdas graves')
+        .replace(/(?<![\p{L}\p{M}])B:/gu, ':')
+        .replace(/(?<![\p{L}\p{M}])Si:/gu, ':')
+        .replace(/\s+/g, ' ')
+        .trim();
     }
     return translateTextWithNotes(clean, settings.noteNaming);
   }, [settings.isFiveString, settings.noteNaming, settings.language]);
@@ -165,10 +182,10 @@ const Program: React.FC = () => {
   const launchTask = useCallback((task: DayTask) => {
     const stringIndices = settings.isFiveString ? task.strings : task.strings.filter(s => s !== 4);
     const pool = getAllPositionsInRanges(task.fretRange[1], stringIndices).filter(p => p.fret >= task.fretRange[0]);
-    if (pool.length === 0 && !task.sequence) { setError(t.noNotesError); return; }
+    if (pool.length === 0 && !task.sequence && !task.modeConfig) { setError(t.noNotesError); return; }
 
     const finalQuestions: FretPosition[] = [];
-    if (!task.sequence) {
+    if (!task.sequence && !task.modeConfig) {
       const targetCount = task.questionCount || 10;
       let lastMidi: number | null = null;
       while (finalQuestions.length < targetCount) {
@@ -185,12 +202,20 @@ const Program: React.FC = () => {
     setSessionKey(prev => prev + 1);
   }, [currentProgramId, settings.isFiveString, sanitizeText, t.noNotesError]);
 
+  const handleExitSession = useCallback(() => {
+    lastLaunchedRef.current = 'exiting';
+    setActiveTask(null);
+    setPendingTask(null);
+    setMicDialogOpen(false);
+    navigate(`/program/${currentProgramId}`, { replace: true });
+  }, [currentProgramId, navigate]);
+
   useEffect(() => {
     if (day) {
       const dayNum = parseInt(day);
       const sessionSlug = `${currentProgramId}-${dayNum}`;
       
-      if (lastLaunchedRef.current === sessionSlug) return;
+      if (lastLaunchedRef.current === 'exiting' || lastLaunchedRef.current === sessionSlug) return;
 
       const task = filteredDays.find(d => d.day === dayNum);
       if (task) {
@@ -206,10 +231,29 @@ const Program: React.FC = () => {
     }
   }, [day, filteredDays, currentProgramId, isTaskUnlocked, isMicEnabled, launchTask, navigate]);
 
-  const handleStartTask = (task: DayTask) => navigate(`/program/${currentProgramId}/day/${task.day}`);
+  const handleStartTask = (task: DayTask) => {
+    lastLaunchedRef.current = null;
+    navigate(`/program/${currentProgramId}/day/${task.day}`);
+  };
   const handleProgramTabChange = (_: any, val: string) => navigate(`/program/${val}`);
 
   if (activeTask) {
+    if (activeTask.task.modeConfig) {
+      return (
+        <ModeSessionRunner
+          key={sessionKey}
+          day={activeTask.task.day}
+          title={activeTask.title}
+          description={sanitizeText(activeTask.task, 'description')}
+          modeConfig={activeTask.task.modeConfig}
+          sequence={activeTask.task.sequence}
+          programId={currentProgramId}
+          onFinish={handleExitSession}
+          onReplay={() => setSessionKey(prev => prev + 1)}
+          onNext={onNextAction}
+        />
+      );
+    }
     if (activeTask.task.isEarTraining) {
       return (
         <EarTrainingSessionRunner 
@@ -218,7 +262,8 @@ const Program: React.FC = () => {
           title={activeTask.title}
           description={sanitizeText(activeTask.task, 'description')}
           sequence={activeTask.task.sequence || []}
-          onFinish={() => navigate(`/program/${currentProgramId}`)}
+          durations={activeTask.task.durations}
+          onFinish={handleExitSession}
           onReplay={() => setSessionKey(prev => prev + 1)}
           onNext={onNextAction}
           programId={currentProgramId}
@@ -230,11 +275,12 @@ const Program: React.FC = () => {
         key={sessionKey}
         questions={activeTask.questions} 
         title={activeTask.title}
-        onFinish={() => navigate(`/program/${currentProgramId}`)}
+        onFinish={handleExitSession}
         day={activeTask.task.day}
         programId={currentProgramId}
         onReplay={() => setSessionKey(prev => prev + 1)}
         sequence={activeTask.task.sequence}
+        pentatonicConfig={activeTask.task.pentatonicConfig}
         onNext={onNextAction}
       />
     );
@@ -282,6 +328,42 @@ const Program: React.FC = () => {
           </IconButton>
         </Box>
       </Box>
+
+      {/* Compact Settings Reminder Banner */}
+      <Paper
+        elevation={0}
+        sx={{
+          px: 2,
+          py: 1.25,
+          mb: 3,
+          borderRadius: 2.5,
+          border: '1px solid',
+          borderColor: 'divider',
+          bgcolor: alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.03 : 0.02),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 1.5,
+        }}
+      >
+        <Stack direction="row" spacing={1.25} alignItems="center" sx={{ flex: '1 1 280px' }}>
+          <SettingsOutlinedIcon fontSize="small" color="primary" sx={{ flexShrink: 0 }} />
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, fontSize: '0.84rem' }}>
+            {t.settingsReminderText}
+          </Typography>
+        </Stack>
+        <Button
+          size="small"
+          variant="outlined"
+          color="primary"
+          startIcon={<SettingsOutlinedIcon fontSize="small" />}
+          onClick={() => navigate('/settings')}
+          sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none', flexShrink: 0 }}
+        >
+          {t.openSettingsBtn}
+        </Button>
+      </Paper>
 
       {settings.srsEnabled && (
         <Paper 
@@ -340,11 +422,11 @@ const Program: React.FC = () => {
           </Tabs>
         </Paper>
         
-        <Box sx={{ mb: 4, p: 3, bgcolor: alpha(theme.palette.primary.main, 0.04), borderRadius: 2 }}>
+        <Box sx={{ mb: 3, p: 3, bgcolor: alpha(theme.palette.primary.main, 0.04), borderRadius: 2 }}>
           <Typography variant="h6" fontWeight="800" gutterBottom>
             {settings.language === 'fr' ? (activeProgram.name_fr || activeProgram.name) : settings.language === 'es' ? (activeProgram.name_es || activeProgram.name) : activeProgram.name}
           </Typography>
-          <Typography variant="body2" color="textSecondary" gutterBottom sx={{ maxWidth: 700 }}>
+          <Typography variant="body2" color="textSecondary" gutterBottom sx={{ maxWidth: 740 }}>
             {(settings.language === 'fr' ? activeProgram.description_fr : settings.language === 'es' ? activeProgram.description_es : activeProgram.description) || activeProgram.description} {settings.minUnlockAccuracy}% {t.needAccuracy}.
           </Typography>
           <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -354,6 +436,246 @@ const Program: React.FC = () => {
             <Typography variant="subtitle2" fontWeight="bold">{masteredCount}/{filteredDays.length} {t.mastered}</Typography>
           </Box>
         </Box>
+
+        {currentProgramId === 'fretboard' && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.3),
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 1.25 }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <SchoolIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle1" fontWeight={900} color="primary">
+                  {t.fretboardRoadmapTitle}
+                </Typography>
+              </Stack>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<SchoolIcon fontSize="small" />}
+                onClick={() => navigate('/theory/geometry')}
+                sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
+              >
+                {t.fretboardRoadmapTheoryBtn}
+              </Button>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+              {translateTextWithNotes(t.fretboardRoadmapBody, settings.noteNaming)}
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Chip
+                size="small"
+                color="secondary"
+                label={translateTextWithNotes(t.fretboardHalfStepChip, settings.noteNaming)}
+                sx={{ fontWeight: 900, borderRadius: 1.5 }}
+              />
+              <Chip
+                size="small"
+                color="primary"
+                label={t.fretboardRuleOf5Chip}
+                sx={{ fontWeight: 900, borderRadius: 1.5 }}
+              />
+              {[
+                t.fretboardStep1,
+                t.fretboardStep2,
+                t.fretboardStep3,
+                t.fretboardStep4,
+              ].map((stepLabel) => (
+                <Chip
+                  key={stepLabel}
+                  size="small"
+                  variant="outlined"
+                  label={stepLabel}
+                  sx={{ fontWeight: 800, borderRadius: 1.5, bgcolor: 'background.paper' }}
+                />
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {currentProgramId === 'eartraining' && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.3),
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 1.25 }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <SchoolIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle1" fontWeight={900} color="primary">
+                  {translations[settings.language].earTraining.roadmapTitle}
+                </Typography>
+              </Stack>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<SchoolIcon fontSize="small" />}
+                onClick={() => navigate('/theory/basics')}
+                sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
+              >
+                {translations[settings.language].earTraining.roadmapTheoryBtn}
+              </Button>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+              {translations[settings.language].earTraining.roadmapBody}
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Chip
+                size="small"
+                color="primary"
+                label={translations[settings.language].earTraining.randomKeyBadge}
+                sx={{ fontWeight: 900, borderRadius: 1.5 }}
+              />
+              <Chip
+                size="small"
+                color="info"
+                label={translations[settings.language].earTraining.roadmapGuidedChip}
+                sx={{ fontWeight: 900, borderRadius: 1.5 }}
+              />
+              {[
+                translations[settings.language].earTraining.tierBeginner,
+                translations[settings.language].earTraining.tierIntermediate,
+                translations[settings.language].earTraining.tierAdvanced,
+                translations[settings.language].earTraining.tierElite,
+              ].map((tierLabel) => (
+                <Chip
+                  key={tierLabel}
+                  size="small"
+                  variant="outlined"
+                  label={tierLabel}
+                  sx={{ fontWeight: 800, borderRadius: 1.5, bgcolor: 'background.paper' }}
+                />
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {currentProgramId === 'pentatonic' && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.3),
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 1.25 }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <SchoolIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle1" fontWeight={900} color="primary">
+                  {translations[settings.language].pentatonic.roadmapTitle}
+                </Typography>
+              </Stack>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<SchoolIcon fontSize="small" />}
+                onClick={() => navigate('/theory/pentatonic')}
+                sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
+              >
+                {translations[settings.language].pentatonic.roadmapTheoryBtn}
+              </Button>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+              {translations[settings.language].pentatonic.roadmapBody}
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Chip
+                size="small"
+                color="info"
+                label={translations[settings.language].pentatonic.formulaMajorChip}
+                sx={{ fontWeight: 900, borderRadius: 1.5 }}
+              />
+              <Chip
+                size="small"
+                color="warning"
+                label={translations[settings.language].pentatonic.formulaMinorChip}
+                sx={{ fontWeight: 900, borderRadius: 1.5 }}
+              />
+              {[
+                translations[settings.language].pentatonic.roadmapStep1,
+                translations[settings.language].pentatonic.roadmapStep2,
+                translations[settings.language].pentatonic.roadmapStep3,
+                translations[settings.language].pentatonic.roadmapStep4,
+                translations[settings.language].pentatonic.roadmapStep5,
+              ].map((stepLabel) => (
+                <Chip
+                  key={stepLabel}
+                  size="small"
+                  variant="outlined"
+                  label={stepLabel}
+                  sx={{ fontWeight: 800, borderRadius: 1.5, bgcolor: 'background.paper' }}
+                />
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {currentProgramId === 'modes' && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.3),
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 1.25 }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <SchoolIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle1" fontWeight={900} color="primary">
+                  {translations[settings.language].modes.roadmapTitle}
+                </Typography>
+              </Stack>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<SchoolIcon fontSize="small" />}
+                onClick={() => navigate('/theory/modes')}
+                sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
+              >
+                {translations[settings.language].modes.roadmapTheoryBtn}
+              </Button>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+              {translateTextWithNotes(translations[settings.language].modes.roadmapBody, settings.noteNaming)}
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {MODE_ORDER.map((modeId) => {
+                const m = MODE_DEFINITIONS[modeId];
+                const mName = settings.language === 'fr' ? m.name_fr : settings.language === 'es' ? m.name_es : m.name;
+                return (
+                  <Chip
+                    key={modeId}
+                    size="small"
+                    variant="outlined"
+                    label={`${m.modeNumber}. ${mName} (${translateNoteName(m.cMajorParentNote, settings.noteNaming)})`}
+                    sx={{ fontWeight: 800, borderRadius: 1.5, bgcolor: 'background.paper' }}
+                  />
+                );
+              })}
+            </Stack>
+          </Paper>
+        )}
       </Box>
 
       <Grid container spacing={2} sx={{ mb: 4 }}>
@@ -410,6 +732,44 @@ const Program: React.FC = () => {
                             sx={{ fontWeight: 900, height: 22, fontSize: '0.65rem', borderRadius: 1.5, bgcolor: alpha(theme.palette.text.primary, 0.05) }} 
                           />
                         )}
+                        {task.modeConfig && (
+                          <Chip
+                            label={
+                              task.modeConfig.stepType === 'scale'
+                                ? translations[settings.language].modes.badgeScale
+                                : task.modeConfig.stepType === 'groove'
+                                ? translations[settings.language].modes.badgeGroove
+                                : task.modeConfig.stepType === 'improv'
+                                ? translations[settings.language].modes.badgeImprovStep
+                                : translations[settings.language].modes.badgeSwitch
+                            }
+                            size="small"
+                            color={
+                              task.modeConfig.stepType === 'scale'
+                                ? 'info'
+                                : task.modeConfig.stepType === 'groove'
+                                ? 'primary'
+                                : task.modeConfig.stepType === 'improv'
+                                ? 'warning'
+                                : 'secondary'
+                            }
+                            variant="outlined"
+                            sx={{ fontWeight: 900, height: 22, fontSize: '0.65rem', borderRadius: 1.5 }}
+                          />
+                        )}
+                        {task.pentatonicConfig && (
+                          <Chip
+                            label={
+                              task.pentatonicConfig.quality === 'major'
+                                ? translations[settings.language].pentatonic.majorBadge
+                                : translations[settings.language].pentatonic.minorBadge
+                            }
+                            size="small"
+                            color={task.pentatonicConfig.quality === 'major' ? 'info' : 'warning'}
+                            variant="outlined"
+                            sx={{ fontWeight: 900, height: 22, fontSize: '0.65rem', borderRadius: 1.5 }}
+                          />
+                        )}
                       </Box>
                       {isSuccessful ? (
                         <CheckCircleIcon color="success" fontSize="small" />
@@ -420,8 +780,43 @@ const Program: React.FC = () => {
                     <Typography variant="subtitle1" gutterBottom fontWeight="900" sx={{ lineHeight: 1.2 }}>{sanitizeText(task, 'title')}</Typography>
                     <Typography variant="body2" color="textSecondary" sx={{ mb: 2, fontSize: '0.85rem' }}>{sanitizeText(task, 'description')}</Typography>
                     
-                    <Box sx={{ mt: 'auto' }}>
+                    <Box sx={{ mt: 'auto', display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center' }}>
                       <Chip label={`${t.fret} ${task.fretRange[0]}-${task.fretRange[1]}`} size="small" variant="outlined" sx={{ borderRadius: 1, fontSize: '0.7rem', fontWeight: 700 }} />
+                      {task.modeConfig && (() => {
+                        const modeDef = MODE_DEFINITIONS[task.modeConfig.primaryMode];
+                        const mName = settings.language === 'fr' ? modeDef.name_fr : settings.language === 'es' ? modeDef.name_es : modeDef.name;
+                        return (
+                          <>
+                            <Chip
+                              label={`${translations[settings.language].modes.modeLabel} ${modeDef.modeNumber} • ${mName}`}
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                              sx={{ borderRadius: 1, fontSize: '0.7rem', fontWeight: 800 }}
+                            />
+                            <Chip
+                              label={`★ ${modeDef.colorDegree} • ${task.modeConfig.progression[0].chordLabel}`}
+                              size="small"
+                              sx={{
+                                borderRadius: 1,
+                                fontSize: '0.7rem',
+                                fontWeight: 800,
+                                bgcolor: alpha(srsAmber, 0.14),
+                                color: theme.palette.mode === 'dark' ? srsAmber : '#b26a00',
+                              }}
+                            />
+                          </>
+                        );
+                      })()}
+                      {task.pentatonicConfig && (
+                        <Chip
+                          label={translations[settings.language].pentatonic.shapeOfFive.replace('{num}', String(task.pentatonicConfig.shapeNumber))}
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          sx={{ borderRadius: 1, fontSize: '0.7rem', fontWeight: 800 }}
+                        />
+                      )}
                       
                       {settings.srsEnabled && srs.level > 0 && (
                         <Box sx={{ mt: 1 }}>
@@ -448,8 +843,20 @@ const Program: React.FC = () => {
       </Snackbar>
       <MicPermissionDialog 
         open={micDialogOpen} 
-        onClose={() => setMicDialogOpen(false)} 
-        onSuccess={() => pendingTask && launchTask(pendingTask)} 
+        onClose={() => {
+          setMicDialogOpen(false);
+          if (!useStore.getState().isMicEnabled && day) {
+            setPendingTask(null);
+            navigate(`/program/${currentProgramId}`, { replace: true });
+          }
+        }} 
+        onSuccess={() => {
+          if (pendingTask) {
+            const taskToLaunch = pendingTask;
+            setPendingTask(null);
+            launchTask(taskToLaunch);
+          }
+        }} 
       />
       <SRSExplainer open={srsExplainerOpen} onClose={() => setSrsExplainerOpen(false)} />
     </Box>

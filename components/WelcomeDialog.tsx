@@ -27,7 +27,7 @@ const WelcomeDialog: React.FC = () => {
         sx: { borderRadius: 3, p: 1 }
       }}
     >
-      <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
+      <DialogTitle component="div" sx={{ textAlign: 'center', pb: 1 }}>
         <Box sx={{ 
           display: 'inline-flex', 
           p: 2, 

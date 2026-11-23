@@ -1,3 +1,8 @@
+import { MODES_IMPROV_PROGRAM, ModeTaskConfig } from './modesProgram';
+import { PENTATONIC_PROGRAM, PentatonicTaskConfig } from './pentatonicProgram';
+
+export { PENTATONIC_PROGRAM };
+
 export interface DayTask {
   day: number;
   title: string;
@@ -17,6 +22,8 @@ export interface DayTask {
   pattern?: number[];
   midiSequence?: number[];
   isEarTraining?: boolean;
+  modeConfig?: ModeTaskConfig;
+  pentatonicConfig?: PentatonicTaskConfig;
 }
 
 export interface TrainingProgram {
@@ -515,41 +522,6 @@ const FRETBOARD_MASTERY_DAYS: DayTask[] = [
   }
 ];
 
-export const PENTATONIC_PROGRAM: DayTask[] = Array.from({ length: 40 }, (_, i) => {
-  const day = i + 1;
-  const isMinor = day > 20;
-  const rootMidies = [28, 33, 38, 43, 36, 31, 26]; 
-  const root = rootMidies[i % rootMidies.length];
-  const NOTE_NAMES_ENG = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  const rootName = NOTE_NAMES_ENG[root % 12];
-  
-  const majorIntervals = [0, 2, 4, 7, 9, 12];
-  const minorIntervals = [0, 3, 5, 7, 10, 12];
-  const intervals = isMinor ? minorIntervals : majorIntervals;
-  
-  const asc = intervals.map(v => root + v);
-  const desc = [...asc].reverse().slice(1);
-  const sequence = [...asc, ...desc];
-  
-  const shapeNum = ((day - 1) % 5) + 1;
-  const keyType = isMinor ? "Minor" : "Major";
-  const keyTypeFr = isMinor ? "Mineure" : "Majeure";
-  const keyTypeEs = isMinor ? "Menor" : "Mayor";
-
-  return {
-    day,
-    title: `${rootName} ${keyType} Pentatonic Shape ${shapeNum}`,
-    description: `Ascending and descending drill focusing on key shapes.`,
-    title_fr: `${rootName} Gamme Pentatonique ${keyTypeFr} Forme ${shapeNum}`,
-    description_fr: `Exercice ascendant et descendant concentré sur les formes clés.`,
-    title_es: `${rootName} Escala Pentatónica ${keyTypeEs} Forma ${shapeNum}`,
-    description_es: `Ejercicio ascendente y descendente centrado en las formas clave.`,
-    strings: [0, 1, 2, 3, 4],
-    fretRange: [0, 15],
-    sequence
-  };
-});
-
 const EAR_TRAINING_TASKS: DayTask[] = [
   // --- BEGINNER: 2-3 NOTES ---
   { 
@@ -1032,11 +1004,11 @@ export const PROGRAMS: TrainingProgram[] = [
   { 
     id: 'pentatonic', 
     name: 'Pentatonic Power', 
-    description: 'Master essential shapes across the neck.', 
+    description: 'Master movable closed-position Major & Minor pentatonic boxes (no open strings) with bite-sized theory tips and live neck guidance.', 
     name_fr: 'Puissance Pentatonique',
-    description_fr: 'Maîtrisez les formes essentielles sur tout le manche.',
+    description_fr: 'Maîtrisez les boîtes pentatoniques majeures et mineures fermées et transposables (sans corde à vide) avec rappels théoriques et manche interactif.',
     name_es: 'Poder Pentatónico',
-    description_es: 'Domina las formas essentielles en todo el mástil.',
+    description_es: 'Domina las cajas pentatónicas mayores y menores en posición cerrada (sin cuerdas al aire) con consejos de teoría y mástil interactivo.',
     days: PENTATONIC_PROGRAM 
   },
   {
@@ -1048,5 +1020,15 @@ export const PROGRAMS: TrainingProgram[] = [
     name_es: 'El Oído',
     description_es: 'Entrena tu oído para reconocer intervalos y melodías sin ayuda visual.',
     days: EAR_TRAINING_TASKS
+  },
+  {
+    id: 'modes',
+    name: 'Modes & Improv',
+    description: 'Beginner-friendly step-by-step guide through all 7 modes in order (1. Ionian → 7. Locrian) with plain-English theory tips, easy grooves, and live improv labs.',
+    name_fr: 'Modes & Improvisation',
+    description_fr: 'Parcours progressif pour débutants à travers les 7 modes dans l\'ordre (1. Ionien → 7. Locrien), avec rappels théoriques simples, grooves faciles et labos d\'impro.',
+    name_es: 'Modos e Improvisación',
+    description_es: 'Guía paso a paso para principiantes por los 7 modos en orden (1. Jónico → 7. Locrio), con teoría clara, grooves sencillos y laboratorios de improvisación.',
+    days: MODES_IMPROV_PROGRAM
   }
 ];
